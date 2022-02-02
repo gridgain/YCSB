@@ -14,25 +14,18 @@
  * the License. See accompanying LICENSE file.
  * <p>
  */
-package com.yahoo.ycsb.db.ignite;
+package com.yahoo.ycsb.db.ignite3;
 
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.Status;
 import com.yahoo.ycsb.StringByteIterator;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -45,17 +38,6 @@ public class IgniteClient extends IgniteAbstractClient {
    *
    */
   private static Logger log = LogManager.getLogger(IgniteClient.class);
-
-
-  /**
-   * Cached binary type.
-   */
-  private BinaryType binType = null;
-  /**
-   * Cached binary type's fields.
-   */
-  private final ConcurrentHashMap<String, BinaryField> fieldsCache = new ConcurrentHashMap<>();
-
 
   /**
    * Read a record from the database. Each field/value pair from the result will
@@ -71,34 +53,29 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
-      BinaryObject po = cache.get(key);
+      Tuple tKey = Tuple.create().set("yscb_key", key);
 
-      if (po == null) {
+      Tuple tValues = kvView.get(null, tKey);
+
+      if (tValues == null) {
         return Status.NOT_FOUND;
       }
 
-      if (binType == null) {
-        binType = po.type();
+      if (fields.isEmpty()) {
+        for (int iter = 0; iter < tValues.columnCount(); iter++) {
+          fields.add(tValues.columnName(iter));
+        }
       }
 
-      for (String s : F.isEmpty(fields) ? binType.fieldNames() : fields) {
-        BinaryField bfld = fieldsCache.get(s);
-
-        if (bfld == null) {
-          bfld = binType.field(s);
-          fieldsCache.put(s, bfld);
+      for (String column : fields) {
+        if (!Objects.equals(tValues.stringValue(column), null)) {
+          result.put(column, new StringByteIterator(tValues.stringValue(column)));
         }
+      }
 
-        String val = bfld.value(po);
-        if (val != null) {
-          result.put(s, new StringByteIterator(val));
-        }
-
-        if (debug) {
-          log.info("table:{" + table + "}, key:{" + key + "}" + ", fields:{" + fields + "}");
-          log.info("fields in po{" + binType.fieldNames() + "}");
-          log.info("result {" + result + "}");
-        }
+      if (debug) {
+        log.info("table:{" + table + "}, key:{" + key + "}" + ", fields:{" + fields + "}");
+        log.info("result {" + result + "}");
       }
 
       return Status.OK;
@@ -123,15 +100,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status update(String table, String key,
                        Map<String, ByteIterator> values) {
-    try {
-      cache.invoke(key, new Updater(values));
-
-      return Status.OK;
-    } catch (Exception e) {
-      log.error(String.format("Error updating key: %s", key), e);
-
-      return Status.ERROR;
-    }
+    return Status.NOT_IMPLEMENTED;
   }
 
   /**
@@ -145,23 +114,16 @@ public class IgniteClient extends IgniteAbstractClient {
    * @return Zero on success, a non-zero error code on error
    */
   @Override
-  public Status insert(String table, String key,
-                       Map<String, ByteIterator> values) {
+  public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      BinaryObjectBuilder bob = cluster.binary().builder("CustomType");
-
+      Tuple value = Tuple.create();
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
-        bob.setField(entry.getKey(), entry.getValue().toString());
-
         if (debug) {
-          log.info(entry.getKey() + ":" + entry.getValue());
+          log.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
         }
       }
-
-      BinaryObject bo = bob.build();
-
       if (table.equals(DEFAULT_CACHE_NAME)) {
-        cache.put(key, bo);
+        kvView.put(null, Tuple.create().set("yscb_key", key), value);
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }
@@ -184,7 +146,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      cache.remove(key);
+      kvView.remove(null, Tuple.create().set("yscb_key", key));
       return Status.OK;
     } catch (Exception e) {
       log.error(String.format("Error deleting key: %s ", key), e);
@@ -193,43 +155,4 @@ public class IgniteClient extends IgniteAbstractClient {
     return Status.ERROR;
   }
 
-  /**
-   * Entry processor to update values.
-   */
-  public static class Updater implements CacheEntryProcessor<String, BinaryObject, Object> {
-    private String[] flds;
-    private String[] vals;
-
-    /**
-     * @param values Updated fields.
-     */
-    Updater(Map<String, ByteIterator> values) {
-      flds = new String[values.size()];
-      vals = new String[values.size()];
-
-      int idx = 0;
-      for (Map.Entry<String, ByteIterator> e : values.entrySet()) {
-        flds[idx] = e.getKey();
-        vals[idx] = e.getValue().toString();
-        ++idx;
-      }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Object process(MutableEntry<String, BinaryObject> mutableEntry, Object... objects)
-        throws EntryProcessorException {
-      BinaryObjectBuilder bob = mutableEntry.getValue().toBuilder();
-
-      for (int i = 0; i < flds.length; ++i) {
-        bob.setField(flds[i], vals[i]);
-      }
-
-      mutableEntry.setValue(bob.build());
-
-      return null;
-    }
-  }
 }

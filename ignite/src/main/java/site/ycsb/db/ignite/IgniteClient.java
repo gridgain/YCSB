@@ -14,11 +14,11 @@
  * the License. See accompanying LICENSE file.
  * <p>
  */
-package com.yahoo.ycsb.db.ignite;
+package site.ycsb.db.ignite;
 
-import com.yahoo.ycsb.ByteIterator;
-import com.yahoo.ycsb.Status;
-import com.yahoo.ycsb.StringByteIterator;
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;

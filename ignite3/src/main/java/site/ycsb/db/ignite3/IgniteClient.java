@@ -14,11 +14,11 @@
  * the License. See accompanying LICENSE file.
  * <p>
  */
-package com.yahoo.ycsb.db.ignite3;
+package site.ycsb.db.ignite3;
 
-import com.yahoo.ycsb.ByteIterator;
-import com.yahoo.ycsb.Status;
-import com.yahoo.ycsb.StringByteIterator;
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
 import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

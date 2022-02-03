@@ -51,6 +51,7 @@ public abstract class IgniteAbstractClient extends DB {
    * Ignite cluster.
    */
   protected static KeyValueView<Tuple, Tuple> kvView = null;
+  protected static IgniteClient client = null;
 
   /**
    * Debug flag.
@@ -74,28 +75,46 @@ public abstract class IgniteAbstractClient extends DB {
 
       String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
-      IgniteClient client = IgniteClient.builder().addresses(host + ":" + ports).build();
+      // <-- this block exists because there is no way to create a cache from the configuration.
       Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
       List<String> fieldnames = new ArrayList<>();
       for (int i = 0; i < 10; i++) {
         fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)
       }
-      String request = "CREATE TABLE IF NOT EXISTS usertable ("
+      String request = "CREATE TABLE IF NOT EXISTS " + DEFAULT_CACHE_NAME + " ("
           + "yscb_key VARCHAR PRIMARY KEY, "
           + String.join(", ", fieldnames)
           + ");";
       System.out.println(request);
-      try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800/");
+      try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
            Statement stmt = conn.createStatement()) {
         stmt.executeUpdate(request);
       }
+      // -->
 
+      client = IgniteClient.builder().addresses(host + ":" + ports).build();
       kvView = client.tables().table("PUBLIC." + DEFAULT_CACHE_NAME).keyValueView();
       if (kvView == null) {
-        throw new Exception("Failed to find cache " + DEFAULT_CACHE_NAME);
+        throw new Exception("Failed to find cache: " + DEFAULT_CACHE_NAME);
       }
     } catch (Exception e) {
       throw new DBException(e);
+    }
+  }
+
+  /**
+   * Cleanup any state for this DB. Called once per DB instance; there is one DB
+   * instance per client thread.
+   */
+  @Override
+  public void cleanup() {
+    if (client != null) {
+      try {
+        client.close();
+        client = null;
+      } catch (Exception e) {
+        log.error(e);
+      }
     }
   }
 

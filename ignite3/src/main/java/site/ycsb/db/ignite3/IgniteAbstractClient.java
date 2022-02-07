@@ -43,7 +43,7 @@ public abstract class IgniteAbstractClient extends DB {
    *
    */
   protected static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
-
+  protected static final int FIELDS_COUNT = 10;
   protected static final String DEFAULT_CACHE_NAME = "usertable";
   protected static final String HOSTS_PROPERTY = "hosts";
   protected static final String PORTS_PROPERTY = "ports";
@@ -79,7 +79,7 @@ public abstract class IgniteAbstractClient extends DB {
       // <-- this block exists because there is no way to create a cache from the configuration.
       Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
       List<String> fieldnames = new ArrayList<>();
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < FIELDS_COUNT; i++) {
         fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)
       }
       String request = "CREATE TABLE IF NOT EXISTS " + DEFAULT_CACHE_NAME + " ("

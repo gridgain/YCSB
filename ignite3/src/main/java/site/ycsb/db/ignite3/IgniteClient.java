@@ -53,7 +53,7 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
-      Tuple tKey = Tuple.create().set("yscb_key", key);
+      Tuple tKey = Tuple.create(1).set("yscb_key", key);
 
       Tuple tValues = kvView.get(null, tKey);
 
@@ -116,14 +116,14 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      Tuple value = Tuple.create();
+      Tuple value = Tuple.create(FIELDS_COUNT);
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
         if (debug) {
           log.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
         }
       }
       if (table.equals(DEFAULT_CACHE_NAME)) {
-        kvView.put(null, Tuple.create().set("yscb_key", key), value);
+        kvView.put(null, Tuple.create(1).set("yscb_key", key), value);
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }
@@ -146,7 +146,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      kvView.remove(null, Tuple.create().set("yscb_key", key));
+      kvView.remove(null, Tuple.create(1).set("yscb_key", key));
       return Status.OK;
     } catch (Exception e) {
       log.error(String.format("Error deleting key: %s ", key), e);

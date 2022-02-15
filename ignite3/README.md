@@ -1,5 +1,5 @@
 <!--
-Copyright (c) 2018 YCSB contributors. All rights reserved.
+Copyright (c) 2021 YCSB contributors. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License. You
@@ -17,77 +17,21 @@ LICENSE file.
 
 ## Quick Start
 
-This section describes how to run YCSB on [Apache Ignite](https://ignite.apache.org).
+This section describes how to run YCSB on [Apache Ignite 3](https://ignite.apache.org).
 
 ### 1. Set Up YCSB
 
 Git clone YCSB and compile:
 
-    git clone http://github.com/brianfrankcooper/YCSB.git
+    git clone http://github.com/gridgain/YCSB.git
     cd YCSB
-    mvn -pl com.yahoo.ycsb:ignite-binding -am clean package
+    mvn -pl site.ycsb:ignite3-binding -am clean package
 
 ### 2. Start Apache Ignite
-1.1 Download latest binary [Apache Ignite release](https://ignite.apache.org/download.cgi#binaries)
+1.1 Download latest binary [Apache Ignite 3 release](https://ignite.apache.org/download.cgi#binaries)
 
-1.2 Copy Ignite configs:
-    
-    cp YCSB/ignite/resources/ignite.xml path/to/apache-ignite-fabric-**ignite_version**-bin
-    cp YCSB/ignite/resources/ignite-sql.xml path/to/apache-ignite-fabric-**ignite_version**-bin
-
-NOTE: Pay attention that some parameters such us ****_storagePath_****, ****_walPath_****, ****_walArchivePath_****
-     should be overwritten by certain pathes. Also please add ip addresses of your host(s) inside the bean ****_TcpDiscoveryVmIpFinder_****
-
-1.3 Copy ignite-binding-**YCSB version**-SNAPSHOT.jar to Ignite libs: 
-    
-    cp YCSB/ignite/target/ignite-binding-**YCSB_version**-SNAPSHOT.jar path/to/apache-ignite-fabric-**ignite_version**-bin/libs
-
-Note: Please use YCSB/ignite/resources/**ignite.xml** for running **IgniteClient** tests and **ignite-sql.xml** for
-**IgniteSqlClient** tests. 
-
-More information about Apache Ignite WAL (Write Ahead Log): https://apacheignite.readme.io/docs/write-ahead-log
-
-1.4 Start ignite nodes:
+1.2 Start ignite3 node(s)
  
-    cd path/to/apache-ignite-fabric-**ignite_version**-bin
-    bin/**ignite.sh** ignite.xml
-or
-
-    bin/**ignite.sh** ignite-sql.xml
-
 ### 3. Load Data and Run Tests
 
-Load the data:
-
-    cd path/to/YCSB
-    bin/ycsb load ignite -p hosts="10.0.0.1"
-        -s -P workloads/workloada \
-        -threads 4 \
-        -p operationcount=100000 \
-        -p recordcount=100000 \
-         > outputload.txt
-Note: '10.0.0.1' is ip address of one of hosts where was started Apache Ignite nodes.
-
-
-Run the workload test with ignite:
-
-    cd path/to/YCSB
-    bin/ycsb run ignite -p hosts="10.0.0.1"
-         -s -P workloads/workloada \
-         -threads 4 \
-         -p operationcount=100000 \
-         -p recordcount=100000 \
-          > output-ignite.txt
-
-Run the workload test with ignite-sql:
-
-    cd path/to/YCSB
-    bin/ycsb run ignite-sql -p hosts="10.0.0.1"
-         -s -P workloads/workloada \
-         -threads 4 \
-         -p operationcount=100000 \
-         -p recordcount=100000 \
-          > output-ignite-sql.txt
-
-
-python2 ycsb run ignite -p hosts="127.0.0.1" -s -P ../workloads/workloada -threads 4 -p operationcount=1000000 -p recordcount=100000 -p measurementtype=timeseries -p dataintegrity=true
+` python bin/ycsb run ignite3 -p hosts="127.0.0.1" -s -P ./workloads/workloada -threads 4 -p operationcount=1000000 -p recordcount=100000 -p measurementtype=timeseries -p dataintegrity=true`

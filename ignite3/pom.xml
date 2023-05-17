@@ -44,6 +44,19 @@ LICENSE file.
       <artifactId>ignite-core</artifactId>
       <version>${ignite3.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.ignite</groupId>
+      <artifactId>ignite-api</artifactId>
+      <version>${ignite3.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.ignite</groupId>
+      <artifactId>ignite-jdbc</artifactId>
+      <version>${ignite3.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.apache.ignite</groupId>
       <artifactId>ignite-client</artifactId>

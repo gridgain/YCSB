@@ -94,7 +94,7 @@ public abstract class IgniteAbstractClient extends DB {
       // -->
 
       client = IgniteClient.builder().addresses(host + ":" + ports).build();
-      kvView = client.tables().table("PUBLIC." + DEFAULT_CACHE_NAME).keyValueView();
+      kvView = client.tables().table(DEFAULT_CACHE_NAME).keyValueView();
       if (kvView == null) {
         throw new Exception("Failed to find cache: " + DEFAULT_CACHE_NAME);
       }

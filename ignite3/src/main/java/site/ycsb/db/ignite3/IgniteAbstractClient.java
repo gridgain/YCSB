@@ -77,7 +77,7 @@ public abstract class IgniteAbstractClient extends DB {
       String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
       // <-- this block exists because there is no way to create a cache from the configuration.
-      Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+      Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
       List<String> fieldnames = new ArrayList<>();
       for (int i = 0; i < FIELDS_COUNT; i++) {
         fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)

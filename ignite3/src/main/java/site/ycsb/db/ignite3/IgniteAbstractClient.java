@@ -32,6 +32,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Ignite abstract client.
@@ -55,6 +56,12 @@ public abstract class IgniteAbstractClient extends DB {
   protected static IgniteClient client = null;
 
   /**
+   * Count the number of times initialized to teardown on the last
+   * {@link #cleanup()}.
+   */
+  private static final AtomicInteger INIT_COUNT = new AtomicInteger(0);
+
+  /**
    * Debug flag.
    */
   protected static boolean debug = false;
@@ -66,40 +73,48 @@ public abstract class IgniteAbstractClient extends DB {
    */
   @Override
   public void init() throws DBException {
-    try {
-      String host = getProperties().getProperty(HOSTS_PROPERTY);
-      if (host == null) {
-        throw new DBException(String.format(
-            "Required property \"%s\" missing for Ignite Cluster",
-            HOSTS_PROPERTY));
+    INIT_COUNT.incrementAndGet();
+
+    synchronized (IgniteAbstractClient.class) {
+      if (client != null) {
+        return;
       }
 
-      String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
+      try {
+        String host = getProperties().getProperty(HOSTS_PROPERTY);
+        if (host == null) {
+          throw new DBException(String.format(
+              "Required property \"%s\" missing for Ignite Cluster",
+              HOSTS_PROPERTY));
+        }
 
-      // <-- this block exists because there is no way to create a cache from the configuration.
-      Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
-      List<String> fieldnames = new ArrayList<>();
-      for (int i = 0; i < FIELDS_COUNT; i++) {
-        fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)
-      }
-      String request = "CREATE TABLE IF NOT EXISTS " + DEFAULT_CACHE_NAME + " ("
-          + "yscb_key VARCHAR PRIMARY KEY, "
-          + String.join(", ", fieldnames)
-          + ");";
-      System.out.println(request);
-      try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
-           Statement stmt = conn.createStatement()) {
-        stmt.executeUpdate(request);
-      }
-      // -->
+        String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
-      client = IgniteClient.builder().addresses(host + ":" + ports).build();
-      kvView = client.tables().table(DEFAULT_CACHE_NAME).keyValueView();
-      if (kvView == null) {
-        throw new Exception("Failed to find cache: " + DEFAULT_CACHE_NAME);
+        // <-- this block exists because there is no way to create a cache from the configuration.
+        Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
+        List<String> fieldnames = new ArrayList<>();
+        for (int i = 0; i < FIELDS_COUNT; i++) {
+          fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)
+        }
+        String request = "CREATE TABLE IF NOT EXISTS " + DEFAULT_CACHE_NAME + " ("
+            + "yscb_key VARCHAR PRIMARY KEY, "
+            + String.join(", ", fieldnames)
+            + ");";
+        System.out.println(request);
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
+             Statement stmt = conn.createStatement()) {
+          stmt.executeUpdate(request);
+        }
+        // -->
+
+        client = IgniteClient.builder().addresses(host + ":" + ports).build();
+        kvView = client.tables().table(DEFAULT_CACHE_NAME).keyValueView();
+        if (kvView == null) {
+          throw new Exception("Failed to find cache: " + DEFAULT_CACHE_NAME);
+        }
+      } catch (Exception e) {
+        throw new DBException(e);
       }
-    } catch (Exception e) {
-      throw new DBException(e);
     }
   }
 
@@ -108,13 +123,17 @@ public abstract class IgniteAbstractClient extends DB {
    * instance per client thread.
    */
   @Override
-  public void cleanup() {
-    if (client != null) {
-      try {
-        client.close();
-        client = null;
-      } catch (Exception e) {
-        log.error(e);
+  public void cleanup() throws DBException {
+    synchronized (IgniteAbstractClient.class) {
+      int curInitCount = INIT_COUNT.decrementAndGet();
+
+      if (curInitCount <= 0) {
+        try {
+          client.close();
+          client = null;
+        } catch (Exception e) {
+          throw new DBException(e);
+        }
       }
     }
   }

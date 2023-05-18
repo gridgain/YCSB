@@ -64,7 +64,7 @@ public abstract class IgniteAbstractClient extends DB {
   /**
    * Debug flag.
    */
-  protected static boolean debug = false;
+  protected static boolean debug = true;
 
 
   /**

@@ -121,6 +121,7 @@ public class IgniteClient extends IgniteAbstractClient {
         if (debug) {
           log.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
         }
+        value.set(entry.getKey(), entry.getValue().toString());
       }
       if (table.equals(DEFAULT_CACHE_NAME)) {
         kvView.put(null, Tuple.create(1).set("yscb_key", key), value);

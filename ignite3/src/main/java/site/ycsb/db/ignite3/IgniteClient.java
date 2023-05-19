@@ -116,14 +116,14 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      Tuple value = Tuple.create(FIELDS_COUNT);
+      Tuple value = Tuple.create(fieldCount);
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
         if (debug) {
           log.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
         }
         value.set(entry.getKey(), entry.getValue().toString());
       }
-      if (table.equals(DEFAULT_CACHE_NAME)) {
+      if (table.equals(cacheName)) {
         kvView.put(null, Tuple.create(1).set("yscb_key", key), value);
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);

@@ -43,9 +43,9 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
 
-  protected static int FIELDS_COUNT = 10;
+  protected int fieldCount;
 
-  protected static String DEFAULT_CACHE_NAME = "usertable";
+  protected String cacheName;
 
   protected static final String HOSTS_PROPERTY = "hosts";
 
@@ -85,8 +85,8 @@ public abstract class IgniteAbstractClient extends DB {
       try {
         debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
 
-        DEFAULT_CACHE_NAME = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
-        FIELDS_COUNT = Integer.parseInt(getProperties().getProperty(
+        cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
+        fieldCount = Integer.parseInt(getProperties().getProperty(
             CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
 
         String host = getProperties().getProperty(HOSTS_PROPERTY);
@@ -100,10 +100,10 @@ public abstract class IgniteAbstractClient extends DB {
         // <-- this block exists because there is no way to create a cache from the configuration.
         Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
         List<String> fieldnames = new ArrayList<>();
-        for (int i = 0; i < FIELDS_COUNT; i++) {
+        for (int i = 0; i < fieldCount; i++) {
           fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)
         }
-        String request = "CREATE TABLE IF NOT EXISTS " + DEFAULT_CACHE_NAME + " ("
+        String request = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
             + "yscb_key VARCHAR PRIMARY KEY, "
             + String.join(", ", fieldnames)
             + ");";
@@ -115,10 +115,10 @@ public abstract class IgniteAbstractClient extends DB {
         // -->
 
         client = IgniteClient.builder().addresses(host + ":" + ports).build();
-        kvView = client.tables().table(DEFAULT_CACHE_NAME).keyValueView();
+        kvView = client.tables().table(cacheName).keyValueView();
 
         if (kvView == null) {
-          throw new Exception("Failed to find cache: " + DEFAULT_CACHE_NAME);
+          throw new Exception("Failed to find cache: " + cacheName);
         }
       } catch (Exception e) {
         throw new DBException(e);

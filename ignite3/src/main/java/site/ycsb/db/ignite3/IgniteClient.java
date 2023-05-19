@@ -37,7 +37,7 @@ public class IgniteClient extends IgniteAbstractClient {
   /**
    *
    */
-  private static Logger log = LogManager.getLogger(IgniteClient.class);
+  private static final Logger log = LogManager.getLogger(IgniteClient.class);
 
   /**
    * Read a record from the database. Each field/value pair from the result will
@@ -53,8 +53,7 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
-      Tuple tKey = Tuple.create(1).set("yscb_key", key);
-
+      Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
       Tuple tValues = kvView.get(null, tKey);
 
       if (tValues == null) {
@@ -79,7 +78,6 @@ public class IgniteClient extends IgniteAbstractClient {
       }
 
       return Status.OK;
-
     } catch (Exception e) {
       log.error(String.format("Error reading key: %s", key), e);
 
@@ -117,14 +115,16 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
       Tuple value = Tuple.create(fieldCount);
+
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
         if (debug) {
           log.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
         }
         value.set(entry.getKey(), entry.getValue().toString());
       }
+
       if (table.equals(cacheName)) {
-        kvView.put(null, Tuple.create(1).set("yscb_key", key), value);
+        kvView.put(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key), value);
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }
@@ -147,7 +147,8 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      kvView.remove(null, Tuple.create(1).set("yscb_key", key));
+      kvView.remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+
       return Status.OK;
     } catch (Exception e) {
       log.error(String.format("Error deleting key: %s ", key), e);
@@ -155,5 +156,4 @@ public class IgniteClient extends IgniteAbstractClient {
 
     return Status.ERROR;
   }
-
 }

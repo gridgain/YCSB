@@ -41,18 +41,22 @@ import site.ycsb.workloads.CoreWorkload;
  */
 public abstract class IgniteAbstractClient extends DB {
 
-  protected static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
+  private static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
 
-  protected int fieldCount;
+  protected static String cacheName;
 
-  protected String cacheName;
+  protected static int fieldCount;
+
+  protected static String fieldPrefix;
 
   protected static final String HOSTS_PROPERTY = "hosts";
 
   protected static final String PORTS_PROPERTY = "ports";
 
+  protected static final String PRIMARY_COLUMN_NAME = "yscb_key";
+
   /**
-   * Ignite thin client.
+   * Single Ignite thin client per process.
    */
   protected static IgniteClient client;
 
@@ -88,6 +92,7 @@ public abstract class IgniteAbstractClient extends DB {
         cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
         fieldCount = Integer.parseInt(getProperties().getProperty(
             CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
+        fieldPrefix = getProperties().getProperty(CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
 
         String host = getProperties().getProperty(HOSTS_PROPERTY);
         if (host == null) {
@@ -99,15 +104,18 @@ public abstract class IgniteAbstractClient extends DB {
 
         // <-- this block exists because there is no way to create a cache from the configuration.
         Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
+
         List<String> fieldnames = new ArrayList<>();
+
         for (int i = 0; i < fieldCount; i++) {
-          fieldnames.add("field" + i + " VARCHAR");       //VARBINARY(6)
+          fieldnames.add(fieldPrefix + i + " VARCHAR");       //VARBINARY(6)
         }
         String request = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
-            + "yscb_key VARCHAR PRIMARY KEY, "
+            + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
             + String.join(", ", fieldnames)
             + ");";
-        System.out.println(request);
+        log.info("Create table request: {}", request);
+
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
              Statement stmt = conn.createStatement()) {
           stmt.executeUpdate(request);

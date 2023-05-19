@@ -37,7 +37,7 @@ public class IgniteClient extends IgniteAbstractClient {
   /**
    *
    */
-  private static final Logger log = LogManager.getLogger(IgniteClient.class);
+  private static final Logger LOG = LogManager.getLogger(IgniteClient.class);
 
   /**
    * Read a record from the database. Each field/value pair from the result will
@@ -73,13 +73,13 @@ public class IgniteClient extends IgniteAbstractClient {
       }
 
       if (debug) {
-        log.info("table:{" + table + "}, key:{" + key + "}" + ", fields:{" + fields + "}");
-        log.info("result {" + result + "}");
+        LOG.info("table:{" + table + "}, key:{" + key + "}" + ", fields:{" + fields + "}");
+        LOG.info("result {" + result + "}");
       }
 
       return Status.OK;
     } catch (Exception e) {
-      log.error(String.format("Error reading key: %s", key), e);
+      LOG.error(String.format("Error reading key: %s", key), e);
 
       return Status.ERROR;
     }
@@ -118,7 +118,7 @@ public class IgniteClient extends IgniteAbstractClient {
 
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
         if (debug) {
-          log.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
+          LOG.info("key:" + key + "; " + entry.getKey() + "!!!" + entry.getValue());
         }
         value.set(entry.getKey(), entry.getValue().toString());
       }
@@ -131,7 +131,7 @@ public class IgniteClient extends IgniteAbstractClient {
 
       return Status.OK;
     } catch (Exception e) {
-      log.error(String.format("Error inserting key: %s", key), e);
+      LOG.error(String.format("Error inserting key: %s", key), e);
 
       return Status.ERROR;
     }
@@ -151,7 +151,7 @@ public class IgniteClient extends IgniteAbstractClient {
 
       return Status.OK;
     } catch (Exception e) {
-      log.error(String.format("Error deleting key: %s ", key), e);
+      LOG.error(String.format("Error deleting key: %s ", key), e);
     }
 
     return Status.ERROR;

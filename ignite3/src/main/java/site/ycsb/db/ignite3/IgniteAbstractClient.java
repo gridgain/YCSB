@@ -41,7 +41,7 @@ import site.ycsb.workloads.CoreWorkload;
  */
 public abstract class IgniteAbstractClient extends DB {
 
-  private static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
+  private static final Logger LOG = LogManager.getLogger(IgniteAbstractClient.class);
 
   protected static String cacheName;
 
@@ -89,10 +89,12 @@ public abstract class IgniteAbstractClient extends DB {
       try {
         debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
 
-        cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
+        cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY,
+            CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
         fieldCount = Integer.parseInt(getProperties().getProperty(
             CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
-        fieldPrefix = getProperties().getProperty(CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
+        fieldPrefix = getProperties().getProperty(CoreWorkload.FIELD_NAME_PREFIX,
+            CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
 
         String host = getProperties().getProperty(HOSTS_PROPERTY);
         if (host == null) {
@@ -114,7 +116,7 @@ public abstract class IgniteAbstractClient extends DB {
             + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
             + String.join(", ", fieldnames)
             + ");";
-        log.info("Create table request: {}", request);
+        LOG.info("Create table request: {}", request);
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
              Statement stmt = conn.createStatement()) {

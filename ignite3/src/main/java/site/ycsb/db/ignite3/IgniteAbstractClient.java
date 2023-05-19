@@ -33,6 +33,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import site.ycsb.workloads.CoreWorkload;
 
 /**
  * Ignite abstract client.
@@ -44,8 +45,8 @@ public abstract class IgniteAbstractClient extends DB {
    *
    */
   protected static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
-  protected static final int FIELDS_COUNT = 10;
-  protected static final String DEFAULT_CACHE_NAME = "usertable";
+  protected static int FIELDS_COUNT = 10;
+  protected static String DEFAULT_CACHE_NAME = "usertable";
   protected static final String HOSTS_PROPERTY = "hosts";
   protected static final String PORTS_PROPERTY = "ports";
 
@@ -82,6 +83,10 @@ public abstract class IgniteAbstractClient extends DB {
 
       try {
         debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
+
+        DEFAULT_CACHE_NAME = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
+        FIELDS_COUNT = Integer.parseInt(getProperties().getProperty(
+            CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
 
         String host = getProperties().getProperty(HOSTS_PROPERTY);
         if (host == null) {

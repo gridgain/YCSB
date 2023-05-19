@@ -17,7 +17,6 @@
 
 package site.ycsb.db.ignite3;
 
-
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
@@ -41,20 +40,23 @@ import site.ycsb.workloads.CoreWorkload;
  * See {@code ignite/README.md} for details.
  */
 public abstract class IgniteAbstractClient extends DB {
-  /**
-   *
-   */
+
   protected static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
+
   protected static int FIELDS_COUNT = 10;
+
   protected static String DEFAULT_CACHE_NAME = "usertable";
+
   protected static final String HOSTS_PROPERTY = "hosts";
+
   protected static final String PORTS_PROPERTY = "ports";
 
   /**
-   * Ignite cluster.
+   * Ignite thin client.
    */
-  protected static KeyValueView<Tuple, Tuple> kvView = null;
-  protected static IgniteClient client = null;
+  protected static IgniteClient client;
+
+  protected static KeyValueView<Tuple, Tuple> kvView;
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -66,7 +68,6 @@ public abstract class IgniteAbstractClient extends DB {
    * Debug flag.
    */
   protected static boolean debug = false;
-
 
   /**
    * Initialize any state for this DB. Called once per DB instance; there is one
@@ -94,7 +95,6 @@ public abstract class IgniteAbstractClient extends DB {
               "Required property \"%s\" missing for Ignite Cluster",
               HOSTS_PROPERTY));
         }
-
         String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
         // <-- this block exists because there is no way to create a cache from the configuration.
@@ -116,6 +116,7 @@ public abstract class IgniteAbstractClient extends DB {
 
         client = IgniteClient.builder().addresses(host + ":" + ports).build();
         kvView = client.tables().table(DEFAULT_CACHE_NAME).keyValueView();
+
         if (kvView == null) {
           throw new Exception("Failed to find cache: " + DEFAULT_CACHE_NAME);
         }

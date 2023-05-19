@@ -81,6 +81,8 @@ public abstract class IgniteAbstractClient extends DB {
       }
 
       try {
+        debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
+
         String host = getProperties().getProperty(HOSTS_PROPERTY);
         if (host == null) {
           throw new DBException(String.format(

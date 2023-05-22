@@ -17,6 +17,13 @@
 
 package site.ycsb.db.ignite3;
 
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.InitParameters;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
@@ -58,7 +65,7 @@ public abstract class IgniteAbstractClient extends DB {
   /**
    * Single Ignite thin client per process.
    */
-  protected static IgniteClient client;
+  protected static Ignite node;
 
   protected static KeyValueView<Tuple, Tuple> kvView;
 
@@ -74,6 +81,11 @@ public abstract class IgniteAbstractClient extends DB {
   protected static boolean debug = false;
 
   /**
+   * Start embedded Ignite node instead of using external one.
+   */
+  protected static boolean useEmbeddedIgnite = false;
+
+  /**
    * Initialize any state for this DB. Called once per DB instance; there is one
    * DB instance per client thread.
    */
@@ -82,12 +94,13 @@ public abstract class IgniteAbstractClient extends DB {
     INIT_COUNT.incrementAndGet();
 
     synchronized (IgniteAbstractClient.class) {
-      if (client != null) {
+      if (node != null) {
         return;
       }
 
       try {
         debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
+        useEmbeddedIgnite = Boolean.parseBoolean(getProperties().getProperty("useEmbedded", "false"));
 
         cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY,
             CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
@@ -104,35 +117,86 @@ public abstract class IgniteAbstractClient extends DB {
         }
         String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
-        // <-- this block exists because there is no way to create a cache from the configuration.
-        Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
-
-        List<String> fieldnames = new ArrayList<>();
-
-        for (int i = 0; i < fieldCount; i++) {
-          fieldnames.add(fieldPrefix + i + " VARCHAR");       //VARBINARY(6)
+        if (useEmbeddedIgnite) {
+          initEmbeddedServerNode();
+        } else {
+          initIgniteClientNode(host, ports);
         }
-        String request = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
-            + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
-            + String.join(", ", fieldnames)
-            + ");";
-        LOG.info("Create table request: {}", request);
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
-             Statement stmt = conn.createStatement()) {
-          stmt.executeUpdate(request);
-        }
-        // -->
-
-        client = IgniteClient.builder().addresses(host + ":" + ports).build();
-        kvView = client.tables().table(cacheName).keyValueView();
 
         if (kvView == null) {
           throw new Exception("Failed to find cache: " + cacheName);
         }
+
+        createTestTable(host, ports);
       } catch (Exception e) {
         throw new DBException(e);
       }
+    }
+  }
+
+  private void initIgniteClientNode(String host, String ports) {
+    node = IgniteClient.builder().addresses(host + ":" + ports).build();
+    kvView = node.tables().table(cacheName).keyValueView();
+  }
+
+  private void initEmbeddedServerNode() throws DBException {
+    node = startIgniteNode();
+    kvView = node.tables().table(cacheName).keyValueView();
+  }
+
+  private static Ignite startIgniteNode() throws DBException {
+    Ignite ignite;
+    String clusterName = "myCluster";
+    String nodeName = "defaultNode";
+
+    try {
+      URL cfgUrl = IgniteAbstractClient.class.getClassLoader().getResource("ignite-config.json");
+      assert cfgUrl != null;
+      Path cfgPath = Paths.get(cfgUrl.getPath());
+
+      // TODO: fixme
+      cfgPath = Paths.get("/home/ivan/Projects/YCSB-gg/ignite3/src/main/resources/ignite-config.json");
+      Path workDir = Paths.get("/tmp/ignite3-ycsb");
+
+      LOG.info("Starting Ignite node {} in {} with config {}", nodeName, workDir, cfgPath);
+      CompletableFuture<Ignite> fut = IgnitionManager.start(nodeName, cfgPath, workDir);
+
+      InitParameters initParameters = InitParameters.builder()
+          .destinationNodeName(nodeName)
+          .metaStorageNodeNames(Collections.singletonList(nodeName))
+          .clusterName(clusterName)
+          .build();
+      IgnitionManager.init(initParameters);
+
+      ignite = fut.join();
+    } catch (Exception e) {
+      throw new DBException("Failed to start an embedded Ignite node", e);
+    }
+
+    return ignite;
+  }
+
+  private void createTestTable(String host, String ports) throws DBException {
+    try {
+      Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
+
+      List<String> fieldnames = new ArrayList<>();
+
+      for (int i = 0; i < fieldCount; i++) {
+        fieldnames.add(fieldPrefix + i + " VARCHAR");       //VARBINARY(6)
+      }
+      String request = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
+          + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
+          + String.join(", ", fieldnames)
+          + ");";
+      LOG.info("Create table request: {}", request);
+
+      try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
+          Statement stmt = conn.createStatement()) {
+        stmt.executeUpdate(request);
+      }
+    } catch (Exception e) {
+      throw new DBException(e);
     }
   }
 
@@ -147,8 +211,8 @@ public abstract class IgniteAbstractClient extends DB {
 
       if (curInitCount <= 0) {
         try {
-          client.close();
-          client = null;
+          node.close();
+          node = null;
         } catch (Exception e) {
           throw new DBException(e);
         }

@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.InitParameters;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.sql.Session;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
@@ -34,9 +35,6 @@ import site.ycsb.DB;
 import site.ycsb.DBException;
 import site.ycsb.Status;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import site.ycsb.workloads.CoreWorkload;
@@ -122,26 +120,28 @@ public abstract class IgniteAbstractClient extends DB {
         } else {
           initIgniteClientNode(host, ports);
         }
-
-        if (kvView == null) {
-          throw new Exception("Failed to find cache: " + cacheName);
-        }
-
-        createTestTable(host, ports);
       } catch (Exception e) {
         throw new DBException(e);
       }
     }
   }
 
-  private void initIgniteClientNode(String host, String ports) {
+  private void initIgniteClientNode(String host, String ports) throws DBException {
     node = IgniteClient.builder().addresses(host + ":" + ports).build();
+    createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
+    if (kvView == null) {
+      throw new DBException("Failed to find cache: " + cacheName);
+    }
   }
 
   private void initEmbeddedServerNode() throws DBException {
     node = startIgniteNode();
+    createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
+    if (kvView == null) {
+      throw new DBException("Failed to find cache: " + cacheName);
+    }
   }
 
   private static Ignite startIgniteNode() throws DBException {
@@ -176,10 +176,8 @@ public abstract class IgniteAbstractClient extends DB {
     return ignite;
   }
 
-  private void createTestTable(String host, String ports) throws DBException {
+  private void createTestTable(Ignite node0) throws DBException {
     try {
-      Class.forName("org.apache.ignite.internal.jdbc.IgniteJdbcDriver");
-
       List<String> fieldnames = new ArrayList<>();
 
       for (int i = 0; i < fieldCount; i++) {
@@ -191,9 +189,8 @@ public abstract class IgniteAbstractClient extends DB {
           + ");";
       LOG.info("Create table request: {}", request);
 
-      try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://" + host + ":" + ports);
-          Statement stmt = conn.createStatement()) {
-        stmt.executeUpdate(request);
+      try (Session ses = node0.sql().createSession()) {
+        ses.execute(null, request);
       }
     } catch (Exception e) {
       throw new DBException(e);

@@ -65,6 +65,13 @@ public abstract class IgniteAbstractClient extends DB {
    */
   protected static Ignite node;
 
+  /**
+   * TODO: fix hardcoded path
+   */
+  protected static final String NODE_CFG_PATH = "/home/ivan/Projects/YCSB-gg/ignite3/src/main/resources/ignite-config.json";
+
+  protected static final Path NODE_WORK_DIR = Paths.get("/tmp/ignite3-ycsb", String.valueOf(System.currentTimeMillis()));
+
   protected static KeyValueView<Tuple, Tuple> kvView;
 
   /**
@@ -155,8 +162,8 @@ public abstract class IgniteAbstractClient extends DB {
       Path cfgPath = Paths.get(cfgUrl.getPath());
 
       // TODO: fixme
-      cfgPath = Paths.get("/home/ivan/Projects/YCSB-gg/ignite3/src/main/resources/ignite-config.json");
-      Path workDir = Paths.get("/tmp/ignite3-ycsb");
+      cfgPath = Paths.get(NODE_CFG_PATH);
+      Path workDir = NODE_WORK_DIR;
 
       LOG.info("Starting Ignite node {} in {} with config {}", nodeName, workDir, cfgPath);
       CompletableFuture<Ignite> fut = IgnitionManager.start(nodeName, cfgPath, workDir);

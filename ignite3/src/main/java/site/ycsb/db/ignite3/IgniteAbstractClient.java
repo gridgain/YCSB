@@ -66,11 +66,13 @@ public abstract class IgniteAbstractClient extends DB {
   protected static Ignite node;
 
   /**
-   * TODO: fix hardcoded path
+   * TODO: fix hardcoded path.
    */
-  protected static final String NODE_CFG_PATH = "/home/ivan/Projects/YCSB-gg/ignite3/src/main/resources/ignite-config.json";
+  protected static final String NODE_CFG_PATH =
+      "/home/ivan/Projects/YCSB-gg/ignite3/src/main/resources/ignite-config.json";
 
-  protected static final Path NODE_WORK_DIR = Paths.get("/tmp/ignite3-ycsb", String.valueOf(System.currentTimeMillis()));
+  protected static final Path NODE_WORK_DIR =
+      Paths.get("/tmp/ignite3-ycsb", String.valueOf(System.currentTimeMillis()));
 
   protected static KeyValueView<Tuple, Tuple> kvView;
 

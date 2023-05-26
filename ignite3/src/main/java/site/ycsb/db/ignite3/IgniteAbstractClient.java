@@ -17,9 +17,11 @@
 
 package site.ycsb.db.ignite3;
 
-import java.net.URL;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
@@ -67,12 +69,6 @@ public abstract class IgniteAbstractClient extends DB {
    */
   protected static Ignite node;
 
-  /**
-   * TODO: fix hardcoded path.
-   */
-  protected static final String NODE_CFG_PATH =
-      "/home/ivan/Projects/YCSB-gg/ignite3/src/main/resources/ignite-config.json";
-
   protected static final Path NODE_WORK_DIR =
       Paths.get("/tmp/ignite3-ycsb", String.valueOf(System.currentTimeMillis()));
 
@@ -95,6 +91,11 @@ public abstract class IgniteAbstractClient extends DB {
   protected static boolean useEmbeddedIgnite = false;
 
   /**
+   * A flag to disable FSYNC via a separate node config.
+   */
+  protected static boolean disableFsync = false;
+
+  /**
    * Initialize any state for this DB. Called once per DB instance; there is one
    * DB instance per client thread.
    */
@@ -110,6 +111,7 @@ public abstract class IgniteAbstractClient extends DB {
       try {
         debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
         useEmbeddedIgnite = Boolean.parseBoolean(getProperties().getProperty("useEmbedded", "false"));
+        disableFsync = Boolean.parseBoolean(getProperties().getProperty("disableFsync", "false"));
 
         cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY,
             CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
@@ -161,13 +163,15 @@ public abstract class IgniteAbstractClient extends DB {
     String nodeName = "defaultNode";
 
     try {
-      URL cfgUrl = IgniteAbstractClient.class.getClassLoader().getResource("ignite-config.json");
-      assert cfgUrl != null;
-      Path cfgPath = Paths.get(cfgUrl.getPath());
-
-      // TODO: fixme
-      cfgPath = Paths.get(NODE_CFG_PATH);
       Path workDir = NODE_WORK_DIR;
+      String cfgResourceName = disableFsync ? "ignite-config-nofsync.json" : "ignite-config.json";
+      Path cfgPath = workDir.resolve(cfgResourceName);
+
+      Files.createDirectories(workDir);
+      try (InputStream cfgIs =
+               IgniteAbstractClient.class.getClassLoader().getResourceAsStream(cfgResourceName)) {
+        Files.copy(Objects.requireNonNull(cfgIs), cfgPath, StandardCopyOption.REPLACE_EXISTING);
+      }
 
       LOG.info("Starting Ignite node {} in {} with config {}", nodeName, workDir, cfgPath);
       CompletableFuture<Ignite> fut = IgnitionManager.start(nodeName, cfgPath, workDir);

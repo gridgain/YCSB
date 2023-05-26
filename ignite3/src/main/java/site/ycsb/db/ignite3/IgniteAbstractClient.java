@@ -25,7 +25,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.InitParameters;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.Session;
+import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
@@ -206,6 +208,24 @@ public abstract class IgniteAbstractClient extends DB {
     }
   }
 
+  private long entriesInTable(Ignite ignite0, String tableName) throws DBException {
+    long entries = 0L;
+
+    try (Session session = ignite0.sql().createSession()) {
+      ResultSet<SqlRow> res = session.execute(null, "SELECT COUNT(*) FROM " + tableName + ";");
+
+      while (res.hasNext()) {
+        SqlRow row = res.next();
+
+        entries = row.longValue(0);
+      }
+    } catch (Exception e) {
+      throw new DBException("Failed to get number of entries in table " + tableName, e);
+    }
+
+    return entries;
+  }
+
   /**
    * Cleanup any state for this DB. Called once per DB instance; there is one DB
    * instance per client thread.
@@ -217,6 +237,9 @@ public abstract class IgniteAbstractClient extends DB {
 
       if (curInitCount <= 0) {
         try {
+          long recordsCnt = entriesInTable(node, cacheName);
+          LOG.info("Records in table {}: {}", cacheName, recordsCnt);
+
           node.close();
           node = null;
         } catch (Exception e) {

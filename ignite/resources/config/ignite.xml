@@ -38,10 +38,10 @@
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="walMode" value="LOG_ONLY"/>
-                <property name="storagePath" value="/path/to/ignite/db/dir"/>
-                <property name="walPath" value="/path/to/ignite/wal/dir"/>
-                <property name="walArchivePath" value="/path/to/ignite/walArch/dir"/>
-                <property name="walHistorySize" value="1"/>
+<!--                <property name="storagePath" value="/path/to/ignite/db/dir"/>-->
+<!--                <property name="walPath" value="/path/to/ignite/wal/dir"/>-->
+<!--                <property name="walArchivePath" value="/path/to/ignite/walArch/dir"/>-->
+<!--                <property name="walHistorySize" value="1"/>-->
                 <property name="metricsEnabled" value="true"/>
 
                 <property name="defaultDataRegionConfiguration">

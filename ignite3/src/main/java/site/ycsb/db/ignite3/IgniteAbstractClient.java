@@ -70,7 +70,7 @@ public abstract class IgniteAbstractClient extends DB {
   protected static Ignite node;
 
   protected static final Path NODE_WORK_DIR =
-      Paths.get("/tmp/ignite3-ycsb", String.valueOf(System.currentTimeMillis()));
+      Paths.get("/home/ivan/tmp/ignite3-ycsb", String.valueOf(System.currentTimeMillis()));
 
   protected static KeyValueView<Tuple, Tuple> kvView;
 

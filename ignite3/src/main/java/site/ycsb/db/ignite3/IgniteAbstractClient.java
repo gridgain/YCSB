@@ -82,17 +82,17 @@ public abstract class IgniteAbstractClient extends DB {
   private static final AtomicInteger INIT_COUNT = new AtomicInteger(0);
 
   /**
-   * Debug flag.
+   * Used to print more information into logs for debugging purposes.
    */
   protected static boolean debug = false;
 
   /**
-   * Start embedded Ignite node instead of using external one.
+   * Start an embedded Ignite node instead of connecting to an external one.
    */
   protected static boolean useEmbeddedIgnite = false;
 
   /**
-   * A flag to disable FSYNC via a separate node config.
+   * Used to disable FSYNC by passing different config to an embedded Ignite node.
    */
   protected static boolean disableFsync = false;
 

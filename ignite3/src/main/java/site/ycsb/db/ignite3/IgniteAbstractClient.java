@@ -213,7 +213,7 @@ public abstract class IgniteAbstractClient extends DB {
     }
   }
 
-  private long entriesInTable(Ignite ignite0, String tableName) throws DBException {
+  private static long entriesInTable(Ignite ignite0, String tableName) throws DBException {
     long entries = 0L;
 
     try (Session session = ignite0.sql().createSession()) {
@@ -242,8 +242,9 @@ public abstract class IgniteAbstractClient extends DB {
 
       if (curInitCount <= 0) {
         try {
-          long recordsCnt = entriesInTable(node, cacheName);
-          LOG.info("Records in table {}: {}", cacheName, recordsCnt);
+          if (debug) {
+            LOG.info("Records in table {}: {}", cacheName, entriesInTable(node, cacheName));
+          }
 
           node.close();
           node = null;

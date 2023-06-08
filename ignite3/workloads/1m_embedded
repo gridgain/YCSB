@@ -3,3 +3,4 @@ operationcount=1000000
 dataintegrity=true
 disableFsync=true
 useEmbedded=true
+workDir=ignite3-work

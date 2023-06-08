@@ -69,10 +69,6 @@ public abstract class IgniteAbstractClient extends DB {
    */
   protected static Ignite node;
 
-  protected static final Path NODE_WORK_DIR =
-      Paths.get("").toAbsolutePath().getParent()
-          .resolve("ignite3-ycsb-work").resolve(String.valueOf(System.currentTimeMillis()));
-
   protected static KeyValueView<Tuple, Tuple> kvView;
 
   /**
@@ -90,6 +86,8 @@ public abstract class IgniteAbstractClient extends DB {
    * Start an embedded Ignite node instead of connecting to an external one.
    */
   protected static boolean useEmbeddedIgnite = false;
+
+  protected static Path embeddedIgniteWorkDir;
 
   /**
    * Used to disable FSYNC by passing different config to an embedded Ignite node.
@@ -113,6 +111,10 @@ public abstract class IgniteAbstractClient extends DB {
         debug = Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
         useEmbeddedIgnite = Boolean.parseBoolean(getProperties().getProperty("useEmbedded", "false"));
         disableFsync = Boolean.parseBoolean(getProperties().getProperty("disableFsync", "false"));
+
+        String workDirProperty = getProperties().getProperty("workDir",
+            "../ignite3-ycsb-work/" + System.currentTimeMillis());
+        embeddedIgniteWorkDir = Paths.get(workDirProperty);
 
         cacheName = getProperties().getProperty(CoreWorkload.TABLENAME_PROPERTY,
             CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
@@ -164,18 +166,17 @@ public abstract class IgniteAbstractClient extends DB {
     String nodeName = "defaultNode";
 
     try {
-      Path workDir = NODE_WORK_DIR;
       String cfgResourceName = disableFsync ? "ignite-config-nofsync.json" : "ignite-config.json";
-      Path cfgPath = workDir.resolve(cfgResourceName);
+      Path cfgPath = embeddedIgniteWorkDir.resolve(cfgResourceName);
 
-      Files.createDirectories(workDir);
+      Files.createDirectories(embeddedIgniteWorkDir);
       try (InputStream cfgIs =
                IgniteAbstractClient.class.getClassLoader().getResourceAsStream(cfgResourceName)) {
         Files.copy(Objects.requireNonNull(cfgIs), cfgPath, StandardCopyOption.REPLACE_EXISTING);
       }
 
-      LOG.info("Starting Ignite node {} in {} with config {}", nodeName, workDir, cfgPath);
-      CompletableFuture<Ignite> fut = IgnitionManager.start(nodeName, cfgPath, workDir);
+      LOG.info("Starting Ignite node {} in {} with config {}", nodeName, embeddedIgniteWorkDir, cfgPath);
+      CompletableFuture<Ignite> fut = IgnitionManager.start(nodeName, cfgPath, embeddedIgniteWorkDir);
 
       InitParameters initParameters = InitParameters.builder()
           .destinationNodeName(nodeName)

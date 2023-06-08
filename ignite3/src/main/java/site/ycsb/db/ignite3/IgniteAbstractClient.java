@@ -122,7 +122,7 @@ public abstract class IgniteAbstractClient extends DB {
             CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
 
         String host = getProperties().getProperty(HOSTS_PROPERTY);
-        if (host == null) {
+        if (!useEmbeddedIgnite && host == null) {
           throw new DBException(String.format(
               "Required property \"%s\" missing for Ignite Cluster",
               HOSTS_PROPERTY));

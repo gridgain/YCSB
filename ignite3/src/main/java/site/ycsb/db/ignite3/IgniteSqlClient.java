@@ -68,6 +68,24 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public Status delete(String table, String key) {
-    return Status.NOT_IMPLEMENTED;
+    String deleteStatement = String.format(
+        "DELETE FROM %s WHERE %S = %S", table, PRIMARY_COLUMN_NAME, key
+    );
+
+    try {
+      try (Session ses = node.sql().createSession()) {
+        if (debug) {
+          LOG.info(deleteStatement);
+        }
+
+        ses.execute(null, deleteStatement);
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error deleting key: %s ", key), e);
+    }
+
+    return Status.ERROR;
   }
 }

@@ -42,7 +42,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
 
       String insertStatement = "INSERT INTO" + table + "(" +
           String.join(", ", columns) + ") VALUES (" +
-          String.join(", ", insertValues) + ");";
+          String.join(", ", insertValues) + ")";
 
       if (table.equals(cacheName)) {
         // TODO: reuse a single session object

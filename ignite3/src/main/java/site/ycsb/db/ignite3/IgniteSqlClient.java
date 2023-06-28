@@ -12,6 +12,9 @@ import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
 
+/**
+ * Ignite3 SQL API client.
+ */
 public class IgniteSqlClient extends IgniteAbstractClient {
 
   private static final Logger LOG = LogManager.getLogger(IgniteSqlClient.class);

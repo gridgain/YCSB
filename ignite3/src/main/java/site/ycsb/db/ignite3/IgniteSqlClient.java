@@ -93,7 +93,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     String deleteStatement = String.format(
-        "DELETE FROM %s WHERE %S = %S", table, PRIMARY_COLUMN_NAME, key
+        "DELETE FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key
     );
 
     try {

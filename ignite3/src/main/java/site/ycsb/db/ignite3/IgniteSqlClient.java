@@ -62,9 +62,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
         insertValues.add(entry.getValue().toString());
       }
 
-      String columnsString = columns.stream()
-          .map(e -> "'" + e + "'")
-          .collect(Collectors.joining(", "));
+      String columnsString = String.join(", ", columns);
       String valuesString = insertValues.stream()
           .map(e -> "'" + e + "'")
           .collect(Collectors.joining(", "));

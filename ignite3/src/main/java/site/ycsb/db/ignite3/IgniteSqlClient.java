@@ -4,17 +4,34 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.sql.Session;
-import org.apache.ignite.sql.Statement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
+import site.ycsb.DBException;
 import site.ycsb.Status;
 
 public class IgniteSqlClient extends IgniteAbstractClient {
 
   private static final Logger LOG = LogManager.getLogger(IgniteSqlClient.class);
+
+  protected static Session session;
+
+  private static final AtomicInteger SQL_INIT_COUNT = new AtomicInteger(0);
+
+  @Override
+  public void init() throws DBException {
+    super.init();
+
+    SQL_INIT_COUNT.incrementAndGet();
+
+    synchronized (IgniteSqlClient.class) {
+      if (session == null) {
+        session = node.sql().createSession();
+      }
+    }
+  }
 
   /** {@inheritDoc} */
   @Override
@@ -45,14 +62,11 @@ public class IgniteSqlClient extends IgniteAbstractClient {
           String.join(", ", insertValues) + ")";
 
       if (table.equals(cacheName)) {
-        // TODO: reuse a single session object
-        try (Session ses = node.sql().createSession()) {
-          if (debug) {
-            LOG.info(insertStatement);
-          }
-
-          ses.execute(null, insertStatement).close();
+        if (debug) {
+          LOG.info(insertStatement);
         }
+
+        session.execute(null, insertStatement).close();
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }
@@ -73,13 +87,11 @@ public class IgniteSqlClient extends IgniteAbstractClient {
     );
 
     try {
-      try (Session ses = node.sql().createSession()) {
-        if (debug) {
-          LOG.info(deleteStatement);
-        }
-
-        ses.execute(null, deleteStatement);
+      if (debug) {
+        LOG.info(deleteStatement);
       }
+
+      session.execute(null, deleteStatement);
 
       return Status.OK;
     } catch (Exception e) {
@@ -87,5 +99,23 @@ public class IgniteSqlClient extends IgniteAbstractClient {
     }
 
     return Status.ERROR;
+  }
+
+  @Override
+  public void cleanup() throws DBException {
+    synchronized (IgniteSqlClient.class) {
+      int currInitCount = SQL_INIT_COUNT.decrementAndGet();
+
+      if (currInitCount <= 0) {
+        try {
+          session.close();
+          session = null;
+        } catch (Exception e) {
+          throw new DBException(e);
+        }
+      }
+    }
+
+    super.cleanup();
   }
 }

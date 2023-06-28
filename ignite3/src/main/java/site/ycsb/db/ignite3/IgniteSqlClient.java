@@ -1,10 +1,12 @@
 package site.ycsb.db.ignite3;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.sql.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,17 +54,22 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      List<String> columns = Arrays.asList(PRIMARY_COLUMN_NAME);
-      List<String> insertValues = Arrays.asList(key);
+      List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
+      List<String> insertValues = new ArrayList<>(Collections.singletonList(key));
 
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
         columns.add(entry.getKey());
         insertValues.add(entry.getValue().toString());
       }
 
-      String insertStatement = "INSERT INTO" + table + "(" +
-          String.join(", ", columns) + ") VALUES (" +
-          String.join(", ", insertValues) + ")";
+      String columnsString = columns.stream()
+          .map(e -> "'" + e + "'")
+          .collect(Collectors.joining(", "));
+      String valuesString = insertValues.stream()
+          .map(e -> "'" + e + "'")
+          .collect(Collectors.joining(", "));
+
+      String insertStatement = String.format("INSERT INTO %s (%s) VALUES (%s);", table, columnsString, valuesString);
 
       if (table.equals(cacheName)) {
         if (debug) {

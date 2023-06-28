@@ -69,7 +69,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
           .map(e -> "'" + e + "'")
           .collect(Collectors.joining(", "));
 
-      String insertStatement = String.format("INSERT INTO %s (%s) VALUES (%s);", table, columnsString, valuesString);
+      String insertStatement = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsString, valuesString);
 
       if (table.equals(cacheName)) {
         if (debug) {

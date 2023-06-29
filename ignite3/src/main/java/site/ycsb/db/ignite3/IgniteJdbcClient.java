@@ -4,38 +4,29 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
 
 /**
- * Ignite3 JDBC benchmark.
+ * Ignite3 JDBC client.
  */
 public class IgniteJdbcClient extends IgniteAbstractClient {
+  public static final Logger LOG = LogManager.getLogger(IgniteJdbcClient.class);
 
-  private static final AtomicInteger JDBC_INIT_COUNT = new AtomicInteger(0);
-
-  private static Connection conn;
+  private static ThreadLocal<Connection> conn;
 
   @Override
   public void init() throws DBException {
     super.init();
 
-    JDBC_INIT_COUNT.incrementAndGet();
-
-    synchronized (IgniteJdbcClient.class) {
-      if (conn != null) {
-        return;
-      }
-
-      try {
-        String url = "jdbc:ignite:thin://" + host + ":" + ports;
-
-        conn = DriverManager.getConnection(url);
-      } catch (Exception e) {
-        throw new DBException(e);
-      }
+    String url = "jdbc:ignite:thin://" + host + ":" + ports;
+    try {
+      conn.set(DriverManager.getConnection(url));
+    } catch (Exception e) {
+      throw new DBException(e);
     }
   }
 
@@ -64,17 +55,15 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
   @Override
   public void cleanup() throws DBException {
-    synchronized (IgniteJdbcClient.class) {
-      int currInitCount = JDBC_INIT_COUNT.decrementAndGet();
+    Connection conn0 = conn.get();
 
-      if (currInitCount <= 0) {
-        try {
-          conn.close();
-          conn = null;
-        } catch (Exception e) {
-          throw new DBException(e);
-        }
+    try {
+      if (conn0 != null && !conn0.isClosed()) {
+        conn0.close();
+        conn.remove();
       }
+    } catch (Exception e) {
+      throw new DBException(e);
     }
 
     super.cleanup();

@@ -45,8 +45,6 @@ import site.ycsb.workloads.CoreWorkload;
 
 /**
  * Ignite abstract client.
- * <p>
- * See {@code ignite/README.md} for details.
  */
 public abstract class IgniteAbstractClient extends DB {
 
@@ -68,6 +66,10 @@ public abstract class IgniteAbstractClient extends DB {
    * Single Ignite thin client per process.
    */
   protected static Ignite node;
+
+  protected static String host;
+
+  protected static String ports;
 
   protected static KeyValueView<Tuple, Tuple> kvView;
 
@@ -123,18 +125,18 @@ public abstract class IgniteAbstractClient extends DB {
         fieldPrefix = getProperties().getProperty(CoreWorkload.FIELD_NAME_PREFIX,
             CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
 
-        String host = getProperties().getProperty(HOSTS_PROPERTY);
+        host = getProperties().getProperty(HOSTS_PROPERTY);
         if (!useEmbeddedIgnite && host == null) {
           throw new DBException(String.format(
               "Required property \"%s\" missing for Ignite Cluster",
               HOSTS_PROPERTY));
         }
-        String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
+        ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
         if (useEmbeddedIgnite) {
           initEmbeddedServerNode();
         } else {
-          initIgniteClientNode(host, ports);
+          initIgniteClientNode();
         }
       } catch (Exception e) {
         throw new DBException(e);
@@ -142,7 +144,7 @@ public abstract class IgniteAbstractClient extends DB {
     }
   }
 
-  private void initIgniteClientNode(String host, String ports) throws DBException {
+  private void initIgniteClientNode() throws DBException {
     node = IgniteClient.builder().addresses(host + ":" + ports).build();
     createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();

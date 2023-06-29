@@ -7,12 +7,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.Session;
+import org.apache.ignite.sql.SqlRow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
 
 /**
  * Ignite3 SQL API client.
@@ -41,7 +44,46 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
-    return Status.NOT_IMPLEMENTED;
+    try {
+      String qry = String.format("SELECT FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key);
+
+      if (debug) {
+        LOG.info(qry);
+      }
+
+      try (ResultSet<SqlRow> rs = session.execute(null, qry)) {
+        SqlRow row = rs.next();
+
+        if (row == null) {
+          return Status.NOT_FOUND;
+        }
+
+        if (fields.isEmpty()) {
+          for (int i = 0; i < fieldCount; i++) {
+            fields.add(fieldPrefix + i);
+          }
+        }
+
+        for (String column : fields) {
+          String val = row.stringValue(column);
+
+          if (val != null) {
+            result.put(column, new StringByteIterator(val));
+          }
+        }
+      }
+
+      if (debug) {
+        LOG.info("table:{" + table + "}, key:{" + key + "}" + ", fields:{" + fields + "}");
+        LOG.info("result {" + result + "}");
+      }
+    } catch (Exception e) {
+      LOG.error(String.format("Error reading key: %s", key), e);
+
+      return Status.ERROR;
+    }
+
+    return Status.OK;
   }
 
   /** {@inheritDoc} */

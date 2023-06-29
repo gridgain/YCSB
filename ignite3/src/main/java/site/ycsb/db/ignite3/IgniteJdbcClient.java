@@ -16,6 +16,9 @@ import site.ycsb.Status;
 public class IgniteJdbcClient extends IgniteAbstractClient {
   public static final Logger LOG = LogManager.getLogger(IgniteJdbcClient.class);
 
+  /**
+   * Use separate connection per thread since sharing a single Connection object is not recommended.
+   */
   private static final ThreadLocal<Connection> conn = new ThreadLocal<>();
 
   @Override

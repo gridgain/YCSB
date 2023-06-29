@@ -25,6 +25,12 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   public void init() throws DBException {
     super.init();
 
+    if (host == null) {
+      throw new DBException(String.format(
+          "Required property \"%s\" missing for Ignite Cluster",
+          HOSTS_PROPERTY));
+    }
+
     String url = "jdbc:ignite:thin://" + host + ":" + ports;
     try {
       CONN.set(DriverManager.getConnection(url));

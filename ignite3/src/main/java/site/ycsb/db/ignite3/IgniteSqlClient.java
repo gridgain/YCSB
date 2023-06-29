@@ -141,7 +141,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
         LOG.info(deleteStatement);
       }
 
-      session.execute(null, deleteStatement);
+      session.execute(null, deleteStatement).close();
 
       return Status.OK;
     } catch (Exception e) {

@@ -19,7 +19,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   /**
    * Use separate connection per thread since sharing a single Connection object is not recommended.
    */
-  private static final ThreadLocal<Connection> conn = new ThreadLocal<>();
+  private static final ThreadLocal<Connection> CONN = new ThreadLocal<>();
 
   @Override
   public void init() throws DBException {
@@ -27,7 +27,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
     String url = "jdbc:ignite:thin://" + host + ":" + ports;
     try {
-      conn.set(DriverManager.getConnection(url));
+      CONN.set(DriverManager.getConnection(url));
     } catch (Exception e) {
       throw new DBException(e);
     }
@@ -58,11 +58,11 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
   @Override
   public void cleanup() throws DBException {
-    Connection conn0 = conn.get();
+    Connection conn0 = CONN.get();
     try {
       if (conn0 != null && !conn0.isClosed()) {
         conn0.close();
-        conn.remove();
+        CONN.remove();
       }
     } catch (Exception e) {
       throw new DBException(e);

@@ -16,7 +16,7 @@ import site.ycsb.Status;
 public class IgniteJdbcClient extends IgniteAbstractClient {
   public static final Logger LOG = LogManager.getLogger(IgniteJdbcClient.class);
 
-  private static ThreadLocal<Connection> conn;
+  private static final ThreadLocal<Connection> conn = new ThreadLocal<>();
 
   @Override
   public void init() throws DBException {
@@ -56,7 +56,6 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   @Override
   public void cleanup() throws DBException {
     Connection conn0 = conn.get();
-
     try {
       if (conn0 != null && !conn0.isClosed()) {
         conn0.close();

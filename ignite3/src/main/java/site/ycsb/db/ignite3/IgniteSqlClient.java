@@ -67,7 +67,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
           // String val = row.stringValue(column);
 
           // Shift to exclude the first column from the result
-          String val = row.stringValue(this.FIELDS.indexOf(column) + 1);
+          String val = row.stringValue(FIELDS.indexOf(column) + 1);
 
           if (val != null) {
             result.put(column, new StringByteIterator(val));

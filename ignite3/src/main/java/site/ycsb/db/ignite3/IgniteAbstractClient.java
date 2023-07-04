@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.InitParameters;
@@ -55,6 +56,8 @@ public abstract class IgniteAbstractClient extends DB {
   protected static int fieldCount;
 
   protected static String fieldPrefix;
+
+  protected static final List<String> FIELDS = new ArrayList<>();
 
   protected static final String HOSTS_PROPERTY = "hosts";
 
@@ -124,6 +127,10 @@ public abstract class IgniteAbstractClient extends DB {
             CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
         fieldPrefix = getProperties().getProperty(CoreWorkload.FIELD_NAME_PREFIX,
             CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
+
+        for (int i = 0; i < fieldCount; i++) {
+          FIELDS.add(fieldPrefix + i);
+        }
 
         host = getProperties().getProperty(HOSTS_PROPERTY);
         if (!useEmbeddedIgnite && host == null) {
@@ -197,15 +204,14 @@ public abstract class IgniteAbstractClient extends DB {
 
   private void createTestTable(Ignite node0) throws DBException {
     try {
-      List<String> fieldnames = new ArrayList<>();
+      String fieldsSpecs = FIELDS.stream()
+          .map(e -> e + " VARCHAR")
+          .collect(Collectors.joining(", "));
 
-      for (int i = 0; i < fieldCount; i++) {
-        fieldnames.add(fieldPrefix + i + " VARCHAR");       //VARBINARY(6)
-      }
       String request = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
           + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
-          + String.join(", ", fieldnames)
-          + ");";
+          + fieldsSpecs + ")";
+
       LOG.info("Create table request: {}", request);
 
       try (Session ses = node0.sql().createSession()) {

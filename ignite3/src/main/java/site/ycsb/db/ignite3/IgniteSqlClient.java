@@ -45,12 +45,6 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      // TODO: move to parent class?
-      List<String> columns = new ArrayList<>();
-      for (int i = 0; i < fieldCount; i++) {
-        columns.add(fieldPrefix + i);
-      }
-
       String qry = String.format("SELECT * FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key);
 
       if (debug) {
@@ -65,7 +59,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
         }
 
         if (fields.isEmpty()) {
-          fields.addAll(columns);
+          fields.addAll(FIELDS);
         }
 
         for (String column : fields) {
@@ -73,7 +67,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
           // String val = row.stringValue(column);
 
           // Shift to exclude the first column from the result
-          String val = row.stringValue(columns.indexOf(column) + 1);
+          String val = row.stringValue(this.FIELDS.indexOf(column) + 1);
 
           if (val != null) {
             result.put(column, new StringByteIterator(val));

@@ -84,8 +84,6 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
-    Connection conn = CONN.get();
-
     try {
       String insertStatement = prepareInsertStatement(table, key, values);
 

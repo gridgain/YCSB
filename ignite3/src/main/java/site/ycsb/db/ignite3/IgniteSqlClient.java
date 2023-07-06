@@ -1,12 +1,8 @@
 package site.ycsb.db.ignite3;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.Session;
 import org.apache.ignite.sql.SqlRow;
@@ -20,7 +16,7 @@ import site.ycsb.StringByteIterator;
 /**
  * Ignite3 SQL API client.
  */
-public class IgniteSqlClient extends IgniteAbstractClient {
+public class IgniteSqlClient extends AbstractSqlClient {
 
   private static final Logger LOG = LogManager.getLogger(IgniteSqlClient.class);
 
@@ -45,7 +41,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      String qry = String.format("SELECT * FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key);
+      String qry = prepareReadStatement(table, key);
 
       if (debug) {
         LOG.info(qry);
@@ -98,20 +94,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
-      List<String> insertValues = new ArrayList<>(Collections.singletonList(key));
-
-      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
-        columns.add(entry.getKey());
-        insertValues.add(entry.getValue().toString());
-      }
-
-      String columnsString = String.join(", ", columns);
-      String valuesString = insertValues.stream()
-          .map(e -> "'" + e + "'")
-          .collect(Collectors.joining(", "));
-
-      String insertStatement = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsString, valuesString);
+      String insertStatement = prepareInsertStatement(table, key, values);
 
       if (table.equals(cacheName)) {
         if (debug) {

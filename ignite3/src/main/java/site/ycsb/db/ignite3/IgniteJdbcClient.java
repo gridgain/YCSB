@@ -2,6 +2,8 @@ package site.ycsb.db.ignite3;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -9,11 +11,12 @@ import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
 
 /**
  * Ignite3 JDBC client.
  */
-public class IgniteJdbcClient extends IgniteAbstractClient {
+public class IgniteJdbcClient extends AbstractSqlClient {
   public static final Logger LOG = LogManager.getLogger(IgniteJdbcClient.class);
 
   /**
@@ -41,8 +44,37 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
-    // TODO: implement
-    return Status.NOT_IMPLEMENTED;
+    try {
+      String qry = prepareReadStatement(table, key);
+
+      if (debug) {
+        LOG.info(qry);
+      }
+
+      try (Statement stmt = CONN.get().createStatement(); ResultSet rs = stmt.executeQuery(qry)) {
+        if (!rs.next()) {
+          return Status.NOT_FOUND;
+        }
+
+        if (fields.isEmpty()) {
+          fields.addAll(FIELDS);
+        }
+
+        for (String column : fields) {
+          String val = rs.getString(FIELDS.indexOf(column) + 1);
+
+          if (val != null) {
+            result.put(column, new StringByteIterator(val));
+          }
+        }
+      }
+    } catch (Exception e) {
+      LOG.error("Error reading key" + key, e);
+
+      return Status.ERROR;
+    }
+
+    return Status.OK;
   }
 
   @Override
@@ -52,8 +84,29 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
-    // TODO: implement
-    return Status.NOT_IMPLEMENTED;
+    Connection conn = CONN.get();
+
+    try {
+      String insertStatement = prepareInsertStatement(table, key, values);
+
+      if (table.equals(cacheName)) {
+        if (debug) {
+          LOG.info(insertStatement);
+        }
+
+        try (Statement stmt = CONN.get().createStatement()) {
+          stmt.executeUpdate(insertStatement);
+        }
+      } else {
+        throw new UnsupportedOperationException("Unexpected table name: " + table);
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error inserting key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   @Override

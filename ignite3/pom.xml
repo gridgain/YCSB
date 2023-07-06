@@ -38,15 +38,6 @@ LICENSE file.
     <skipJDK11Tests>true</skipJDK11Tests>
   </properties>
 
-  <repositories>
-    <repository>
-      <!-- TODO remove after IGNITE-19386 - switch to io.scalecube:scalecube-cluster -->
-      <id>jitpack.io</id>
-      <name>Jitpack Repository</name>
-      <url>https://jitpack.io</url>
-    </repository>
-  </repositories>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.ignite</groupId>

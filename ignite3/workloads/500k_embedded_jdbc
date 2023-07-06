@@ -1,0 +1,7 @@
+recordcount=500000
+operationcount=500000
+dataintegrity=true
+disableFsync=true
+useEmbedded=true
+workDir=ignite3-work
+hosts=127.0.0.1

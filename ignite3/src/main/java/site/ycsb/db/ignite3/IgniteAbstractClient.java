@@ -215,7 +215,7 @@ public abstract class IgniteAbstractClient extends DB {
       LOG.info("Create table request: {}", request);
 
       try (Session ses = node0.sql().createSession()) {
-        ses.execute(null, request);
+        ses.execute(null, request).close();
       }
     } catch (Exception e) {
       throw new DBException(e);
@@ -225,9 +225,8 @@ public abstract class IgniteAbstractClient extends DB {
   private static long entriesInTable(Ignite ignite0, String tableName) throws DBException {
     long entries = 0L;
 
-    try (Session session = ignite0.sql().createSession()) {
-      ResultSet<SqlRow> res = session.execute(null, "SELECT COUNT(*) FROM " + tableName + ";");
-
+    try (Session session = ignite0.sql().createSession();
+        ResultSet<SqlRow> res = session.execute(null, "SELECT COUNT(*) FROM " + tableName)) {
       while (res.hasNext()) {
         SqlRow row = res.next();
 

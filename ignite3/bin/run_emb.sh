@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Use this script to run benchmarks with embedded AI3 node
+
 set -x
 
 declare -a BINDINGS=(

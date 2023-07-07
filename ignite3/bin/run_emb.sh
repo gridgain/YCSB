@@ -38,6 +38,9 @@ function runYscb() {
       "${GLOBAL_ARGS}" \
       "${addArgs}" \
       2>&1 | tee -a "${logFileName}"
+
+  # Save YCSB results in a separate file
+  grep -E -e "^\[[A-Z]" -e "Command line" "${logFileName}" > "${logFileName}.res.csv"
 }
 
 function runBinding() {

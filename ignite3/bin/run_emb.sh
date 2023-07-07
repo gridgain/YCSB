@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Use this script to run benchmarks with embedded AI3 node
+# Have to be run from the "target/ycsb-ignite3-binding-*" directory
 
 set -x
 

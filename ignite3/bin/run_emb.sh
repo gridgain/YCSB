@@ -37,7 +37,7 @@ function runYscb() {
       "${workloads}" \
       "${GLOBAL_ARGS}" \
       "${addArgs}" \
-      2>&1 | tee "${logFileName}"
+      2>&1 | tee -a "${logFileName}"
 }
 
 function runBinding() {

@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.InitParameters;
@@ -45,8 +46,6 @@ import site.ycsb.workloads.CoreWorkload;
 
 /**
  * Ignite abstract client.
- * <p>
- * See {@code ignite/README.md} for details.
  */
 public abstract class IgniteAbstractClient extends DB {
 
@@ -58,6 +57,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static String fieldPrefix;
 
+  protected static final List<String> FIELDS = new ArrayList<>();
+
   protected static final String HOSTS_PROPERTY = "hosts";
 
   protected static final String PORTS_PROPERTY = "ports";
@@ -68,6 +69,10 @@ public abstract class IgniteAbstractClient extends DB {
    * Single Ignite thin client per process.
    */
   protected static Ignite node;
+
+  protected static String host;
+
+  protected static String ports;
 
   protected static KeyValueView<Tuple, Tuple> kvView;
 
@@ -123,18 +128,22 @@ public abstract class IgniteAbstractClient extends DB {
         fieldPrefix = getProperties().getProperty(CoreWorkload.FIELD_NAME_PREFIX,
             CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
 
-        String host = getProperties().getProperty(HOSTS_PROPERTY);
+        for (int i = 0; i < fieldCount; i++) {
+          FIELDS.add(fieldPrefix + i);
+        }
+
+        host = getProperties().getProperty(HOSTS_PROPERTY);
         if (!useEmbeddedIgnite && host == null) {
           throw new DBException(String.format(
               "Required property \"%s\" missing for Ignite Cluster",
               HOSTS_PROPERTY));
         }
-        String ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
+        ports = getProperties().getProperty(PORTS_PROPERTY, "10800");
 
         if (useEmbeddedIgnite) {
           initEmbeddedServerNode();
         } else {
-          initIgniteClientNode(host, ports);
+          initIgniteClientNode();
         }
       } catch (Exception e) {
         throw new DBException(e);
@@ -142,7 +151,7 @@ public abstract class IgniteAbstractClient extends DB {
     }
   }
 
-  private void initIgniteClientNode(String host, String ports) throws DBException {
+  private void initIgniteClientNode() throws DBException {
     node = IgniteClient.builder().addresses(host + ":" + ports).build();
     createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
@@ -195,19 +204,18 @@ public abstract class IgniteAbstractClient extends DB {
 
   private void createTestTable(Ignite node0) throws DBException {
     try {
-      List<String> fieldnames = new ArrayList<>();
+      String fieldsSpecs = FIELDS.stream()
+          .map(e -> e + " VARCHAR")
+          .collect(Collectors.joining(", "));
 
-      for (int i = 0; i < fieldCount; i++) {
-        fieldnames.add(fieldPrefix + i + " VARCHAR");       //VARBINARY(6)
-      }
       String request = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
           + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
-          + String.join(", ", fieldnames)
-          + ");";
+          + fieldsSpecs + ")";
+
       LOG.info("Create table request: {}", request);
 
       try (Session ses = node0.sql().createSession()) {
-        ses.execute(null, request);
+        ses.execute(null, request).close();
       }
     } catch (Exception e) {
       throw new DBException(e);
@@ -217,9 +225,8 @@ public abstract class IgniteAbstractClient extends DB {
   private static long entriesInTable(Ignite ignite0, String tableName) throws DBException {
     long entries = 0L;
 
-    try (Session session = ignite0.sql().createSession()) {
-      ResultSet<SqlRow> res = session.execute(null, "SELECT COUNT(*) FROM " + tableName + ";");
-
+    try (Session session = ignite0.sql().createSession();
+        ResultSet<SqlRow> res = session.execute(null, "SELECT COUNT(*) FROM " + tableName)) {
       while (res.hasNext()) {
         SqlRow row = res.next();
 

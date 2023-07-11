@@ -29,9 +29,7 @@ import java.util.Set;
 
 
 /**
- * Ignite client.
- * <p>
- * See {@code ignite/README.md} for details.
+ * Ignite3 key-value client.
  */
 public class IgniteClient extends IgniteAbstractClient {
   /**

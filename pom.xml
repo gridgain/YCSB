@@ -64,9 +64,9 @@ LICENSE file.
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/brianfrankcooper/YCSB.git</connection>
+    <connection>scm:git:git@github.com:gridgain/YCSB.git</connection>
     <tag>master</tag>
-    <url>https://github.com/brianfrankcooper/YCSB</url>
+    <url>https://github.com/gridgain/YCSB</url>
   </scm>
   <distributionManagement>
     <repository>

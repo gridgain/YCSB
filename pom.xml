@@ -70,15 +70,10 @@ LICENSE file.
   </scm>
   <distributionManagement>
     <repository>
-      <id>sonatype.releases.https</id>
-      <name>Release Repo at sonatype oss.</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <id>gridgain-private</id>
+      <name>GridGain Private Maven Repository</name>
+      <url>https://gridgainsystems.com/nexus/content/repositories/gridgain-private/</url>
     </repository>
-    <snapshotRepository>
-      <id>sonatype.snapshots.https</id>
-      <name>snapshot Repo at sonatype oss.</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
   </distributionManagement>
   <dependencyManagement>
     <dependencies>

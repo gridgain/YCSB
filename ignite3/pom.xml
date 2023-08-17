@@ -33,10 +33,28 @@ LICENSE file.
   <packaging>jar</packaging>
 
   <properties>
+    <maven.local.repo>${basedir}/../var/m2/repository</maven.local.repo>
     <skipJDK9Tests>true</skipJDK9Tests>
     <skipJDK10Tests>true</skipJDK10Tests>
     <skipJDK11Tests>true</skipJDK11Tests>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>use-local-maven-repo</id>
+      <activation>
+        <file>
+          <exists>${maven.local.repo}</exists>
+        </file>
+      </activation>
+      <repositories>
+        <repository>
+          <id>ignite3-local-repo</id>
+          <url>file://${maven.local.repo}</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>

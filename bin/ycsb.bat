@@ -219,7 +219,7 @@ FOR /F "tokens=2*" %%G IN ("%*") DO (
 
 @REM Run YCSB
 @ECHO ON
-"%JAVA_HOME%\bin\java.exe" %JAVA_OPTS% %YCSB_CLASS% %YCSB_COMMAND% -db %BINDING_CLASS% %YCSB_ARGS%
+"%JAVA_HOME%\bin\java.exe" %JAVA_OPTS% -classpath "%CLASSPATH%" %YCSB_CLASS% %YCSB_COMMAND% -db %BINDING_CLASS% %YCSB_ARGS%
 @ECHO OFF
 
 GOTO end

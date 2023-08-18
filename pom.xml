@@ -19,9 +19,9 @@ LICENSE file.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>site.ycsb</groupId>
+  <groupId>org.gridgain.ycsb</groupId>
   <artifactId>root</artifactId>
-  <version>0.18.0-SNAPSHOT</version>
+  <version>2023.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>YCSB Root</name>
@@ -64,21 +64,16 @@ LICENSE file.
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/brianfrankcooper/YCSB.git</connection>
+    <connection>scm:git:git@github.com:gridgain/YCSB.git</connection>
     <tag>master</tag>
-    <url>https://github.com/brianfrankcooper/YCSB</url>
+    <url>https://github.com/gridgain/YCSB</url>
   </scm>
   <distributionManagement>
     <repository>
-      <id>sonatype.releases.https</id>
-      <name>Release Repo at sonatype oss.</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <id>gridgain-private</id>
+      <name>GridGain Private Maven Repository</name>
+      <url>https://gridgainsystems.com/nexus/content/repositories/gridgain-private/</url>
     </repository>
-    <snapshotRepository>
-      <id>sonatype.snapshots.https</id>
-      <name>snapshot Repo at sonatype oss.</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
   </distributionManagement>
   <dependencyManagement>
     <dependencies>

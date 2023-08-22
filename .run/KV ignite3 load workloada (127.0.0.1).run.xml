@@ -2,7 +2,7 @@
   <configuration default="false" name="KV ignite3 load workloada (127.0.0.1)" type="Application" factoryName="Application" folderName="Scenarios">
     <option name="MAIN_CLASS_NAME" value="site.ycsb.Client" />
     <module name="ignite3-binding" />
-    <option name="PROGRAM_PARAMETERS" value="-load -db site.ycsb.db.ignite3.IgniteClient -P ./workloads/workloada -p hosts=&quot;127.0.0.1&quot; -s -threads 1" />
+    <option name="PROGRAM_PARAMETERS" value="-load -db site.ycsb.db.ignite3.IgniteClient -P ./workloads/workloadc -p hosts=&quot;127.0.0.1&quot; -s -threads 1" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="site.ycsb.*" />

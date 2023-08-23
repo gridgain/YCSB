@@ -20,7 +20,7 @@ abstract class AbstractSqlClient extends IgniteAbstractClient {
 
     String columnsString = String.join(", ", columns);
     String valuesString = insertValues.stream()
-        .map(e -> "'" + e + "'")
+        .map(e -> "'" + e.replaceAll("'", "''") + "'")
         .collect(Collectors.joining(", "));
 
     return String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsString, valuesString);

@@ -16,6 +16,7 @@
  */
 package site.ycsb.db.ignite3;
 
+import java.util.HashSet;
 import site.ycsb.ByteIterator;
 import site.ycsb.Status;
 import site.ycsb.StringByteIterator;
@@ -58,7 +59,8 @@ public class IgniteClient extends IgniteAbstractClient {
         return Status.NOT_FOUND;
       }
 
-      if (fields.isEmpty()) {
+      if (fields == null || fields.isEmpty()) {
+        fields = new HashSet<>();
         for (int iter = 0; iter < tValues.columnCount(); iter++) {
           fields.add(tValues.columnName(iter));
         }

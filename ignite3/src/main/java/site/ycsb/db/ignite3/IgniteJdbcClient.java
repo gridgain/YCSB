@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -56,7 +57,8 @@ public class IgniteJdbcClient extends AbstractSqlClient {
           return Status.NOT_FOUND;
         }
 
-        if (fields.isEmpty()) {
+        if (fields == null || fields.isEmpty()) {
+          fields = new HashSet<>();
           fields.addAll(FIELDS);
         }
 

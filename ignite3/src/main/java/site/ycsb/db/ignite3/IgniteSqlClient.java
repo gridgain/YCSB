@@ -1,5 +1,6 @@
 package site.ycsb.db.ignite3;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,7 +55,8 @@ public class IgniteSqlClient extends AbstractSqlClient {
           return Status.NOT_FOUND;
         }
 
-        if (fields.isEmpty()) {
+        if (fields == null || fields.isEmpty()) {
+          fields = new HashSet<>();
           fields.addAll(FIELDS);
         }
 

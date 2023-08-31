@@ -235,7 +235,9 @@ public abstract class IgniteAbstractClient extends DB {
         String reqDbEngine = dbEngine.isEmpty() ? "" : " ENGINE " + dbEngine;
         String paramReplicas = replicas.isEmpty() ? "" : "replicas=" + replicas;
         String paramPartitions = partitions.isEmpty() ? "" : "partitions=" + partitions;
-        String params = Stream.of(paramReplicas, paramPartitions).filter(s -> !s.isEmpty()).collect(Collectors.joining(", "));
+        String params = Stream.of(paramReplicas, paramPartitions)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.joining(", "));
         String reqWithParams = params.isEmpty() ? "" : " WITH " + params;
 
         createZoneReq = "CREATE ZONE IF NOT EXISTS " + DEFAULT_ZONE_NAME + reqDbEngine + reqWithParams + ";";

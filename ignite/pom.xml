@@ -51,18 +51,21 @@ LICENSE file.
       <groupId>org.gridgain</groupId>
       <artifactId>ignite-core</artifactId>
       <version>${gridgain.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.gridgain</groupId>
       <artifactId>ignite-indexing</artifactId>
       <version>${gridgain.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.gridgain</groupId>
       <artifactId>ignite-log4j2</artifactId>
       <version>${gridgain.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

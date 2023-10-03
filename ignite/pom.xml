@@ -36,7 +36,6 @@ LICENSE file.
     <skipJDK9Tests>true</skipJDK9Tests>
     <skipJDK10Tests>true</skipJDK10Tests>
     <skipJDK11Tests>true</skipJDK11Tests>
-    <gridgain.version>8.8.34</gridgain.version>
   </properties>
 
   <repositories>

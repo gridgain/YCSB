@@ -17,11 +17,16 @@
 
 package site.ycsb.db.ignite;
 
-import java.io.File;
-import java.net.URISyntaxException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,6 +79,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   /** Start an embedded Ignite node instead of connecting to an external one. */
   protected static boolean useEmbeddedIgnite = false;
+
+  protected static Path embeddedIgniteWorkDir;
 
   /** Node access method ("kv" - Key-Value [default], "sql" - SQL). */
   protected static String accessMethod = "kv";
@@ -165,7 +172,7 @@ public abstract class IgniteAbstractClient extends DB {
     return Ignition.start(igcfg);
   }
 
-  private Ignite getEmbeddedServerNode() throws URISyntaxException {
+  private Ignite getEmbeddedServerNode() throws IOException {
     if (!"kv".equalsIgnoreCase(accessMethod) && !"sql".equalsIgnoreCase(accessMethod)) {
       throw new RuntimeException("Wrong value for parameter 'accessMethod'. "
           + "Expected one of 'kv', 'sql'. Actual: " + accessMethod);
@@ -176,11 +183,19 @@ public abstract class IgniteAbstractClient extends DB {
           + "Expected one of 'atomic', 'tx'. Actual: " + atomicityMode);
     }
 
+    String workDirProperty = getProperties().getProperty("workDir", "./ignite-ycsb-work");
+    embeddedIgniteWorkDir = Paths.get(workDirProperty);
+
     String cfgFileName = String.format("emb-%s-%s.xml", accessMethod.toLowerCase(), atomicityMode.toLowerCase());
-    String cfgFilePath = new File(getClass().getClassLoader().getResource(cfgFileName).toURI()).getAbsolutePath();
+    Path cfgPath = embeddedIgniteWorkDir.resolve(cfgFileName);
+
+    Files.createDirectories(embeddedIgniteWorkDir);
+    try (InputStream cfgIs = getClass().getClassLoader().getResourceAsStream(cfgFileName)) {
+      Files.copy(Objects.requireNonNull(cfgIs), cfgPath, StandardCopyOption.REPLACE_EXISTING);
+    }
 
     log.info("Start embedded Ignite node.");
-    return Ignition.start(cfgFilePath);
+    return Ignition.start(cfgPath.toString());
   }
 
   /**

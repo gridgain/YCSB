@@ -197,12 +197,12 @@ public class OneMeasurementTimeSeries extends OneMeasurement {
     Integer j = i.intValue();
     if (i % 1 == 0) {
       switch (j % 100) {
-        case 11:
-        case 12:
-        case 13:
-          return j + "th";
-        default:
-          return j + suffixes[j % 10];
+      case 11:
+      case 12:
+      case 13:
+        return j + "th";
+      default:
+        return j + suffixes[j % 10];
       }
     } else {
       return i.toString();

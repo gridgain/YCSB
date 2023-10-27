@@ -45,7 +45,7 @@ public class DBWrapper extends DB {
 
   private static final AtomicBoolean LOG_REPORT_CONFIG = new AtomicBoolean(false);
 
-  private ThreadLocal<Integer> opsDone = ThreadLocal.withInitial(() -> 0);
+  private final ThreadLocal<Integer> opsDone = ThreadLocal.withInitial(() -> 0);
 
   private final String scopeStringCleanup;
   private final String scopeStringDelete;

@@ -151,11 +151,11 @@ public class ClientThread implements Runnable {
               payloadStart = System.currentTimeMillis();
             }
             opsdone++;
-            totalopsdone++;
           } else {
             warmupopsdone++;
-            totalopsdone++;
           }
+
+          totalopsdone++;
 
           throttleNanos(startTimeNanos);
         }
@@ -173,11 +173,11 @@ public class ClientThread implements Runnable {
               payloadStart = System.currentTimeMillis();
             }
             opsdone++;
-            totalopsdone++;
           } else {
             warmupopsdone++;
-            totalopsdone++;
           }
+
+          totalopsdone++;
 
           throttleNanos(startTimeNanos);
         }

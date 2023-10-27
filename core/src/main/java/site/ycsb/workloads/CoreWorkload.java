@@ -371,7 +371,7 @@ public class CoreWorkload extends Workload {
 
   private Measurements measurements = Measurements.getMeasurements();
 
-  private ThreadLocal<Integer> opsDone = ThreadLocal.withInitial(() -> 0);
+  private final ThreadLocal<Integer> opsDone = ThreadLocal.withInitial(() -> 0);
 
   public static String buildKeyName(long keynum, int zeropadding, boolean orderedinserts) {
     if (!orderedinserts) {

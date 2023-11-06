@@ -17,6 +17,8 @@
 
 package site.ycsb.measurements;
 
+import static site.ycsb.Client.WARM_UP_OPERATIONS_COUNT_PROPERTY;
+
 import site.ycsb.Status;
 import site.ycsb.measurements.exporter.MeasurementsExporter;
 
@@ -36,6 +38,7 @@ public class Measurements {
     HDRHISTOGRAM,
     HDRHISTOGRAM_AND_HISTOGRAM,
     HDRHISTOGRAM_AND_RAW,
+    HDRHISTOGRAM_AND_TIMESERIES,
     TIMESERIES,
     RAW
   }
@@ -51,6 +54,8 @@ public class Measurements {
 
   private static Measurements singleton = null;
   private static Properties measurementproperties = null;
+
+  private static int mWarmUpOps = 0;
 
   public static void setProperties(Properties props) {
     measurementproperties = props;
@@ -95,6 +100,9 @@ public class Measurements {
     case "hdrhistogram+raw":
       measurementType = MeasurementType.HDRHISTOGRAM_AND_RAW;
       break;
+    case "hdrhistogram+timeseries":
+      measurementType = MeasurementType.HDRHISTOGRAM_AND_TIMESERIES;
+      break;
     case "timeseries":
       measurementType = MeasurementType.TIMESERIES;
       break;
@@ -119,6 +127,13 @@ public class Measurements {
     default:
       throw new IllegalArgumentException("unknown " + MEASUREMENT_INTERVAL + "=" + mIntervalString);
     }
+
+    String mWarmUpOpsProp = this.props.getProperty(WARM_UP_OPERATIONS_COUNT_PROPERTY, "0");
+    try {
+      mWarmUpOps = Integer.parseInt(mWarmUpOpsProp);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not convert to int warmupops=" + mWarmUpOps, e);
+    }
   }
 
   private OneMeasurement constructOneMeasurement(String name) {
@@ -135,6 +150,10 @@ public class Measurements {
       return new TwoInOneMeasurement(name,
           new OneMeasurementHdrHistogram("Hdr" + name, props),
           new OneMeasurementRaw("Raw" + name, props));
+    case HDRHISTOGRAM_AND_TIMESERIES:
+      return new TwoInOneMeasurement(name,
+          new OneMeasurementHdrHistogram(name, props),
+          new OneMeasurementTimeSeries(name, props));
     case TIMESERIES:
       return new OneMeasurementTimeSeries(name, props);
     case RAW:
@@ -276,6 +295,13 @@ public class Measurements {
       ret += m.getSummary() + " ";
     }
     return ret;
+  }
+
+  /**
+   * Get warm-up operations value.
+   */
+  public int getWarmUpOps() {
+    return mWarmUpOps;
   }
 
 }

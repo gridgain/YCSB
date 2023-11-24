@@ -71,7 +71,9 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static final String DEFAULT_ZONE_NAME = "Z1";
 
-  protected static final int DATA_STREAMER_BATCH_SIZE = 512;
+  protected static final int DATA_STREAMER_BATCH_SIZE = 1000;
+
+  protected static final int DATA_STREAMER_AUTOFLUSH_FREQUENCY = 5000;
 
   /**
    * Single Ignite thin client per process.
@@ -82,11 +84,11 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static KeyValueView<Tuple, Tuple> kvView;
 
-  protected RecordView<Tuple> recordView;
+  protected RecordView<Tuple> rView;
 
-  protected SubmissionPublisher publisher;
+  protected SubmissionPublisher rvPublisher;
 
-  protected CompletableFuture<Void> streamerFut;
+  protected CompletableFuture<Void> rvStreamerFut;
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -175,9 +177,12 @@ public abstract class IgniteAbstractClient extends DB {
           initIgniteClientNode();
         }
 
-        publisher = new SubmissionPublisher<Tuple>();
-        DataStreamerOptions options = DataStreamerOptions.builder().batchSize(DATA_STREAMER_BATCH_SIZE).build();
-        streamerFut = recordView.streamData(publisher, options);
+        DataStreamerOptions dsOptions = DataStreamerOptions.builder()
+            .batchSize(DATA_STREAMER_BATCH_SIZE)
+            .autoFlushFrequency(DATA_STREAMER_AUTOFLUSH_FREQUENCY)
+            .build();
+        rvPublisher = new SubmissionPublisher<Tuple>();
+        rvStreamerFut = rView.streamData(rvPublisher, dsOptions);
 
       } catch (Exception e) {
         throw new DBException(e);
@@ -189,7 +194,7 @@ public abstract class IgniteAbstractClient extends DB {
     node = IgniteClient.builder().addresses(hosts.split(",")).build();
     createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
-    recordView = node.tables().table(cacheName).recordView();
+    rView = node.tables().table(cacheName).recordView();
     if (kvView == null) {
       throw new DBException("Failed to find cache: " + cacheName);
     }
@@ -199,7 +204,7 @@ public abstract class IgniteAbstractClient extends DB {
     node = startIgniteNode();
     createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
-    recordView = node.tables().table(cacheName).recordView();
+    rView = node.tables().table(cacheName).recordView();
     if (kvView == null) {
       throw new DBException("Failed to find cache: " + cacheName);
     }
@@ -310,9 +315,9 @@ public abstract class IgniteAbstractClient extends DB {
             LOG.info("Records in table {}: {}", cacheName, entriesInTable(node, cacheName));
           }
 
-          publisher.close();
+          rvPublisher.close();
 
-          streamerFut.join();
+          rvStreamerFut.join();
 
           node.close();
           node = null;

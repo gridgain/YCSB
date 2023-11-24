@@ -51,7 +51,7 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
       values.forEach((k, v) -> value.set(k, v.toString()));
 
       if (table.equals(cacheName)) {
-        publisher.submit(value);
+        rvPublisher.submit(value);
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }

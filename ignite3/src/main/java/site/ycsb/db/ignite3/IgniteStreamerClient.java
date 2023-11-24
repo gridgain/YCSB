@@ -48,9 +48,7 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
 
       value.set(PRIMARY_COLUMN_NAME, key);
 
-      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
-        value.set(entry.getKey(), entry.getValue().toString());
-      }
+      values.forEach((k, v) -> value.set(k, v.toString()));
 
       if (table.equals(cacheName)) {
         publisher.submit(value);

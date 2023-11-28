@@ -18,10 +18,15 @@ package site.ycsb.db.ignite3;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.SubmissionPublisher;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.table.DataStreamerOptions;
 import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
+import site.ycsb.DBException;
 import site.ycsb.Status;
 
 /**
@@ -32,15 +37,45 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   private static final Logger LOG = LogManager.getLogger(IgniteStreamerClient.class);
 
   /**
-   * Insert a record in the database. Any field/value pairs in the specified
-   * values HashMap will be written into the record with the specified record
-   * key.
-   *
-   * @param table  The name of the table
-   * @param key    The record key of the record to insert.
-   * @param values A HashMap of field/value pairs to insert in the record
-   * @return Zero on success, a non-zero error code on error
+   * Count the number of times initialized to teardown on the last
+   * {@link #cleanup()}.
    */
+  private static final AtomicInteger INIT_COUNT = new AtomicInteger(0);
+
+  /** Data streamer batch size. */
+  protected static final int DATA_STREAMER_BATCH_SIZE = 1000;
+
+  /** Data streamer auto-flush frequency. */
+  protected static final int DATA_STREAMER_AUTOFLUSH_FREQUENCY = 5000;
+
+  /** Record view publisher. */
+  protected SubmissionPublisher rvPublisher;
+
+  /** Record view data streamer completable future. */
+  protected CompletableFuture<Void> rvStreamerFut;
+
+  /** {@inheritDoc} */
+  @Override
+  public void init() throws DBException {
+    super.init();
+
+    INIT_COUNT.incrementAndGet();
+
+    synchronized (IgniteSqlClient.class) {
+      if (rvPublisher != null) {
+        return;
+      }
+
+      DataStreamerOptions dsOptions = DataStreamerOptions.builder()
+          .batchSize(DATA_STREAMER_BATCH_SIZE)
+          .autoFlushFrequency(DATA_STREAMER_AUTOFLUSH_FREQUENCY)
+          .build();
+      rvPublisher = new SubmissionPublisher<Tuple>();
+      rvStreamerFut = rView.streamData(rvPublisher, dsOptions);
+    }
+  }
+
+  /** {@inheritDoc} */
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
@@ -64,47 +99,44 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
     }
   }
 
-  /**
-   * Read a record from the database. Each field/value pair from the result will
-   * be stored in a HashMap.
-   *
-   * @param table  The name of the table
-   * @param key    The record key of the record to read.
-   * @param fields The list of fields to read, or null for all of them
-   * @param result A HashMap of field/value pairs for the result
-   * @return Zero on success, a non-zero error code on error
-   */
+  /** {@inheritDoc} */
   @Override
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     return Status.NOT_IMPLEMENTED;
   }
 
-  /**
-   * Update a record in the database. Any field/value pairs in the specified
-   * values HashMap will be written into the record with the specified record
-   * key, overwriting any existing values with the same field name.
-   *
-   * @param table  The name of the table
-   * @param key    The record key of the record to write.
-   * @param values A HashMap of field/value pairs to update in the record
-   * @return Zero on success, a non-zero error code on error
-   */
+  /** {@inheritDoc} */
   @Override
   public Status update(String table, String key,
                        Map<String, ByteIterator> values) {
     return Status.NOT_IMPLEMENTED;
   }
 
-  /**
-   * Delete a record from the database.
-   *
-   * @param table The name of the table
-   * @param key   The record key of the record to delete.
-   * @return Zero on success, a non-zero error code on error
-   */
+  /** {@inheritDoc} */
   @Override
   public Status delete(String table, String key) {
     return Status.NOT_IMPLEMENTED;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cleanup() throws DBException {
+    synchronized (IgniteStreamerClient.class) {
+      int curInitCount = INIT_COUNT.decrementAndGet();
+
+      if (curInitCount <= 0) {
+        try {
+          rvPublisher.close();
+
+          rvStreamerFut.join();
+
+          node.close();
+          node = null;
+        } catch (Exception e) {
+          throw new DBException(e);
+        }
+      }
+    }
   }
 }

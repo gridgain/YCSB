@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -71,10 +70,6 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static final String DEFAULT_ZONE_NAME = "Z1";
 
-  protected static final int DATA_STREAMER_BATCH_SIZE = 1000;
-
-  protected static final int DATA_STREAMER_AUTOFLUSH_FREQUENCY = 5000;
-
   /**
    * Single Ignite thin client per process.
    */
@@ -85,10 +80,6 @@ public abstract class IgniteAbstractClient extends DB {
   protected static KeyValueView<Tuple, Tuple> kvView;
 
   protected RecordView<Tuple> rView;
-
-  protected SubmissionPublisher rvPublisher;
-
-  protected CompletableFuture<Void> rvStreamerFut;
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -176,14 +167,6 @@ public abstract class IgniteAbstractClient extends DB {
         } else {
           initIgniteClientNode();
         }
-
-        DataStreamerOptions dsOptions = DataStreamerOptions.builder()
-            .batchSize(DATA_STREAMER_BATCH_SIZE)
-            .autoFlushFrequency(DATA_STREAMER_AUTOFLUSH_FREQUENCY)
-            .build();
-        rvPublisher = new SubmissionPublisher<Tuple>();
-        rvStreamerFut = rView.streamData(rvPublisher, dsOptions);
-
       } catch (Exception e) {
         throw new DBException(e);
       }
@@ -314,10 +297,6 @@ public abstract class IgniteAbstractClient extends DB {
           if (debug) {
             LOG.info("Records in table {}: {}", cacheName, entriesInTable(node, cacheName));
           }
-
-          rvPublisher.close();
-
-          rvStreamerFut.join();
 
           node.close();
           node = null;

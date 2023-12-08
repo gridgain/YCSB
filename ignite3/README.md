@@ -25,7 +25,7 @@ Git clone YCSB and compile:
 
     git clone http://github.com/gridgain/YCSB.git
     cd YCSB
-    mvn -pl site.ycsb:ignite3-binding -am clean package
+    mvn -pl org.gridgain.ycsb:ignite3-binding -am clean package
 
 ### 2. Start Apache Ignite
 1.1 Download latest binary [Apache Ignite 3 release](https://ignite.apache.org/download.cgi#binaries)

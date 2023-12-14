@@ -148,9 +148,6 @@ public class IgniteSqlClient extends AbstractSqlClient {
 
       if (currInitCount <= 0) {
         try {
-          readPreparedStatement.get().close();
-          insertPreparedStatement.get().close();
-
           session.close();
           session = null;
         } catch (Exception e) {

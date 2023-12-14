@@ -124,9 +124,6 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     Connection conn0 = CONN.get();
     try {
       if (conn0 != null && !conn0.isClosed()) {
-        readPreparedStatement.get().close();
-        insertPreparedStatement.get().close();
-
         conn0.close();
         CONN.remove();
       }

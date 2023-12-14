@@ -8,23 +8,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import site.ycsb.ByteIterator;
-import site.ycsb.DBException;
 
 abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** Prepared statement for reading values. */
-  protected static ThreadLocal<PreparedStatement> readPreparedStatement;
+  protected static ThreadLocal<PreparedStatement> readPreparedStatement = new ThreadLocal<>();
 
   /** Prepared statement for inserting values. */
-  protected static ThreadLocal<PreparedStatement> insertPreparedStatement;
-
-  /** {@inheritDoc} */
-  @Override
-  public void init() throws DBException {
-    super.init();
-
-    readPreparedStatement = new ThreadLocal<>();
-    insertPreparedStatement = new ThreadLocal<>();
-  }
+  protected static ThreadLocal<PreparedStatement> insertPreparedStatement = new ThreadLocal<>();
 
   /**
    * Form a prepared statement SQL command for inserting values.

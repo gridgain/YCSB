@@ -1,6 +1,8 @@
 package site.ycsb.db.ignite3;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +27,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
 
   private static final AtomicInteger SQL_INIT_COUNT = new AtomicInteger(0);
 
+  /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
     super.init();
@@ -74,8 +77,8 @@ public class IgniteSqlClient extends AbstractSqlClient {
       }
 
       if (debug) {
-        LOG.info("table:{" + table + "}, key:{" + key + "}" + ", fields:{" + fields + "}");
-        LOG.info("result {" + result + "}");
+        LOG.info("table: {}, key: {}, fields: {}", table, key, fields);
+        LOG.info("result: {}", result);
       }
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
@@ -96,14 +99,13 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      String insertStatement = prepareInsertStatement(table, key, values);
+      String insertStatement = prepareInsertStatement(table, values);
 
       if (table.equals(cacheName)) {
-        if (debug) {
-          LOG.info(insertStatement);
-        }
-
-        session.execute(null, insertStatement).close();
+        List<String> valuesList = new ArrayList<>();
+        valuesList.add(key);
+        values.values().forEach(v -> valuesList.add(String.valueOf(v)));
+        session.execute(null, insertStatement, (Object[]) valuesList.toArray(new String[0])).close();
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }
@@ -138,6 +140,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
     return Status.ERROR;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
     synchronized (IgniteSqlClient.class) {
@@ -145,6 +148,9 @@ public class IgniteSqlClient extends AbstractSqlClient {
 
       if (currInitCount <= 0) {
         try {
+          readPreparedStatement.get().close();
+          insertPreparedStatement.get().close();
+
           session.close();
           session = null;
         } catch (Exception e) {

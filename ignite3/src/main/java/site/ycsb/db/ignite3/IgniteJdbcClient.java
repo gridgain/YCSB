@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +25,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
    */
   private static final ThreadLocal<Connection> CONN = new ThreadLocal<>();
 
+  /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
     super.init();
@@ -48,34 +48,29 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      String qry = prepareReadStatement(table);
+      PreparedStatement stmt = prepareReadStatement(CONN.get(), table);
 
-      if (debug) {
-        LOG.info(qry);
-      }
+      stmt.setString(1, key);
 
-      try (PreparedStatement stmt = CONN.get().prepareStatement(qry)) {
-        stmt.setString(1, key);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (!rs.next()) {
+          return Status.NOT_FOUND;
+        }
 
-        try (ResultSet rs = stmt.executeQuery()) {
-          if (!rs.next()) {
-            return Status.NOT_FOUND;
-          }
+        if (fields == null || fields.isEmpty()) {
+          fields = new HashSet<>();
+          fields.addAll(FIELDS);
+        }
 
-          if (fields == null || fields.isEmpty()) {
-            fields = new HashSet<>();
-            fields.addAll(FIELDS);
-          }
+        for (String column : fields) {
+          String val = rs.getString(FIELDS.indexOf(column) + 1);
 
-          for (String column : fields) {
-            String val = rs.getString(FIELDS.indexOf(column) + 1);
-
-            if (val != null) {
-              result.put(column, new StringByteIterator(val));
-            }
+          if (val != null) {
+            result.put(column, new StringByteIterator(val));
           }
         }
       }
@@ -88,24 +83,22 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     return Status.OK;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     return Status.NOT_IMPLEMENTED;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      String insertStatement = prepareInsertStatement(table, key, values);
-
       if (table.equals(cacheName)) {
-        if (debug) {
-          LOG.info(insertStatement);
-        }
+        PreparedStatement stmt = prepareInsertStatement(CONN.get(), table, values);
 
-        try (Statement stmt = CONN.get().createStatement()) {
-          stmt.executeUpdate(insertStatement);
-        }
+        setStatementValues(stmt, key, values);
+
+        stmt.executeUpdate();
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }
@@ -118,17 +111,22 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public Status delete(String table, String key) {
     // TODO: implement
     return Status.NOT_IMPLEMENTED;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
     Connection conn0 = CONN.get();
     try {
       if (conn0 != null && !conn0.isClosed()) {
+        readPreparedStatement.get().close();
+        insertPreparedStatement.get().close();
+
         conn0.close();
         CONN.remove();
       }

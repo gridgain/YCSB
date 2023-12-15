@@ -11,10 +11,10 @@ import site.ycsb.ByteIterator;
 
 abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** Prepared statement for reading values. */
-  protected static ThreadLocal<PreparedStatement> readPreparedStatement = new ThreadLocal<>();
+  protected static final ThreadLocal<PreparedStatement> readPreparedStatement = new ThreadLocal<>();
 
   /** Prepared statement for inserting values. */
-  protected static ThreadLocal<PreparedStatement> insertPreparedStatement = new ThreadLocal<>();
+  protected static final ThreadLocal<PreparedStatement> insertPreparedStatement = new ThreadLocal<>();
 
   /**
    * Form a prepared statement SQL command for inserting values.
@@ -44,13 +44,17 @@ abstract class AbstractSqlClient extends IgniteAbstractClient {
    */
   static PreparedStatement prepareInsertStatement(Connection conn, String table, Map<String, ByteIterator> values)
       throws SQLException {
-    if (insertPreparedStatement.get() != null) {
-      return insertPreparedStatement.get();
+    PreparedStatement statement = insertPreparedStatement.get();
+
+    if (statement != null) {
+      return statement;
     }
 
-    insertPreparedStatement.set(conn.prepareStatement(prepareInsertStatement(table, values)));
+    statement = conn.prepareStatement(prepareInsertStatement(table, values));
 
-    return insertPreparedStatement.get();
+    insertPreparedStatement.set(statement);
+
+    return statement;
   }
 
   /**
@@ -87,14 +91,16 @@ abstract class AbstractSqlClient extends IgniteAbstractClient {
    * @param table Table.
    */
   static PreparedStatement prepareReadStatement(Connection conn, String table) throws SQLException {
-    if (readPreparedStatement.get() != null) {
-      return readPreparedStatement.get();
+    PreparedStatement statement = readPreparedStatement.get();
+
+    if (statement != null) {
+      return statement;
     }
 
-    String readStatement = prepareReadStatement(table);
+    statement = conn.prepareStatement(prepareReadStatement(table));
 
-    readPreparedStatement.set(conn.prepareStatement(readStatement));
+    readPreparedStatement.set(statement);
 
-    return readPreparedStatement.get();
+    return statement;
   }
 }

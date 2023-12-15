@@ -8,51 +8,61 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import site.ycsb.ByteIterator;
+import site.ycsb.DBException;
 
 abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** Prepared statement for reading values. */
-  protected static final ThreadLocal<PreparedStatement> readPreparedStatement = new ThreadLocal<>();
+  protected static final ThreadLocal<PreparedStatement> READ_PREPARED_STATEMENT = new ThreadLocal<>();
 
   /** Prepared statement for inserting values. */
-  protected static final ThreadLocal<PreparedStatement> insertPreparedStatement = new ThreadLocal<>();
+  protected static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = new ThreadLocal<>();
 
-  /**
-   * Form a prepared statement SQL command for inserting values.
-   *
-   * @param table Table.
-   * @param values Values.
-   */
-  static String prepareInsertStatement(String table, Map<String, ByteIterator> values) {
-    List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
+  /** SQL string of prepared statement for reading values. */
+  protected static String readPreparedStatementString;
 
-    for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
-      columns.add(entry.getKey());
+  /** SQL string of prepared statement for inserting values. */
+  protected static String insertPreparedStatementString;
+
+  /** {@inheritDoc} */
+  @Override
+  public void init() throws DBException {
+    super.init();
+
+    synchronized (AbstractSqlClient.class) {
+      if (readPreparedStatementString != null || insertPreparedStatementString != null) {
+        return;
+      }
+
+      readPreparedStatementString = String.format("SELECT * FROM %s WHERE %s = ?", cacheName, PRIMARY_COLUMN_NAME);
+
+      List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
+      columns.addAll(FIELDS);
+
+      String columnsString = String.join(", ", columns);
+
+      String valuesString = String.join(", ", Collections.nCopies(columns.size(), "?"));
+
+      insertPreparedStatementString = String.format("INSERT INTO %s (%s) VALUES (%s)",
+          cacheName, columnsString, valuesString);
     }
-
-    String columnsString = String.join(", ", columns);
-    String valuesString = String.join(", ", Collections.nCopies(columns.size(), "?"));
-
-    return String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsString, valuesString);
   }
 
   /**
    * Init prepared statement object for inserting values.
    *
    * @param conn Connection.
-   * @param table Table.
-   * @param values Values.
    */
-  static PreparedStatement prepareInsertStatement(Connection conn, String table, Map<String, ByteIterator> values)
+  static PreparedStatement prepareInsertStatement(Connection conn)
       throws SQLException {
-    PreparedStatement statement = insertPreparedStatement.get();
+    PreparedStatement statement = INSERT_PREPARED_STATEMENT.get();
 
     if (statement != null) {
       return statement;
     }
 
-    statement = conn.prepareStatement(prepareInsertStatement(table, values));
+    statement = conn.prepareStatement(insertPreparedStatementString);
 
-    insertPreparedStatement.set(statement);
+    INSERT_PREPARED_STATEMENT.set(statement);
 
     return statement;
   }
@@ -76,30 +86,20 @@ abstract class AbstractSqlClient extends IgniteAbstractClient {
   }
 
   /**
-   * Form a prepared statement SQL command for reading values.
-   *
-   * @param table Table.
-   */
-  static String prepareReadStatement(String table) {
-    return String.format("SELECT * FROM %s WHERE %s = ?", table, PRIMARY_COLUMN_NAME);
-  }
-
-  /**
    * Init prepared statement object for reading values.
    *
    * @param conn Connection.
-   * @param table Table.
    */
-  static PreparedStatement prepareReadStatement(Connection conn, String table) throws SQLException {
-    PreparedStatement statement = readPreparedStatement.get();
+  static PreparedStatement prepareReadStatement(Connection conn) throws SQLException {
+    PreparedStatement statement = READ_PREPARED_STATEMENT.get();
 
     if (statement != null) {
       return statement;
     }
 
-    statement = conn.prepareStatement(prepareReadStatement(table));
+    statement = conn.prepareStatement(readPreparedStatementString);
 
-    readPreparedStatement.set(statement);
+    READ_PREPARED_STATEMENT.set(statement);
 
     return statement;
   }

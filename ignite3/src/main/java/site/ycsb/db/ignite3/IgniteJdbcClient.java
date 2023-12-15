@@ -52,7 +52,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      PreparedStatement stmt = prepareReadStatement(CONN.get(), table);
+      PreparedStatement stmt = prepareReadStatement(CONN.get());
 
       stmt.setString(1, key);
 
@@ -94,7 +94,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
       if (table.equals(cacheName)) {
-        PreparedStatement stmt = prepareInsertStatement(CONN.get(), table, values);
+        PreparedStatement stmt = prepareInsertStatement(CONN.get());
 
         setStatementValues(stmt, key, values);
 

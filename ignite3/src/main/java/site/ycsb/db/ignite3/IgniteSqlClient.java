@@ -45,13 +45,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      String qry = prepareReadStatement(table);
-
-      if (debug) {
-        LOG.info(qry);
-      }
-
-      try (ResultSet<SqlRow> rs = session.execute(null, qry, key)) {
+      try (ResultSet<SqlRow> rs = session.execute(null, readPreparedStatementString, key)) {
         if (!rs.hasNext()) {
           return Status.NOT_FOUND;
         }
@@ -99,13 +93,11 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      String insertStatement = prepareInsertStatement(table, values);
-
       if (table.equals(cacheName)) {
         List<String> valuesList = new ArrayList<>();
         valuesList.add(key);
         values.values().forEach(v -> valuesList.add(String.valueOf(v)));
-        session.execute(null, insertStatement, (Object[]) valuesList.toArray(new String[0])).close();
+        session.execute(null, insertPreparedStatementString, (Object[]) valuesList.toArray(new String[0])).close();
       } else {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
       }

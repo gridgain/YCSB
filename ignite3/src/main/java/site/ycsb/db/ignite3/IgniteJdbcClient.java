@@ -39,8 +39,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     try {
       return CONN.get().prepareStatement(readPreparedStatementString);
     } catch (SQLException e) {
-      LOG.error("Unable to prepare statement for SQL: " + readPreparedStatementString, e);
-      return null;
+      throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
     }
   }
 
@@ -49,8 +48,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     try {
       return CONN.get().prepareStatement(insertPreparedStatementString);
     } catch (SQLException e) {
-      LOG.error("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
-      return null;
+      throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
     }
   }
 

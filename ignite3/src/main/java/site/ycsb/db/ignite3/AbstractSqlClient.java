@@ -1,6 +1,5 @@
 package site.ycsb.db.ignite3;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -11,12 +10,6 @@ import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 
 abstract class AbstractSqlClient extends IgniteAbstractClient {
-  /** Prepared statement for reading values. */
-  protected static final ThreadLocal<PreparedStatement> READ_PREPARED_STATEMENT = new ThreadLocal<>();
-
-  /** Prepared statement for inserting values. */
-  protected static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = new ThreadLocal<>();
-
   /** SQL string of prepared statement for reading values. */
   protected static String readPreparedStatementString;
 
@@ -48,26 +41,6 @@ abstract class AbstractSqlClient extends IgniteAbstractClient {
   }
 
   /**
-   * Init prepared statement object for inserting values.
-   *
-   * @param conn Connection.
-   */
-  static PreparedStatement prepareInsertStatement(Connection conn)
-      throws SQLException {
-    PreparedStatement statement = INSERT_PREPARED_STATEMENT.get();
-
-    if (statement != null) {
-      return statement;
-    }
-
-    statement = conn.prepareStatement(insertPreparedStatementString);
-
-    INSERT_PREPARED_STATEMENT.set(statement);
-
-    return statement;
-  }
-
-  /**
    * Set values for the prepared statement object.
    *
    * @param statement Prepared statement object.
@@ -83,24 +56,5 @@ abstract class AbstractSqlClient extends IgniteAbstractClient {
     for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
       statement.setString(i++, entry.getValue().toString());
     }
-  }
-
-  /**
-   * Init prepared statement object for reading values.
-   *
-   * @param conn Connection.
-   */
-  static PreparedStatement prepareReadStatement(Connection conn) throws SQLException {
-    PreparedStatement statement = READ_PREPARED_STATEMENT.get();
-
-    if (statement != null) {
-      return statement;
-    }
-
-    statement = conn.prepareStatement(readPreparedStatementString);
-
-    READ_PREPARED_STATEMENT.set(statement);
-
-    return statement;
   }
 }

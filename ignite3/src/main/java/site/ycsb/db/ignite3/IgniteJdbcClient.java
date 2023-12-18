@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,34 @@ public class IgniteJdbcClient extends AbstractSqlClient {
    * Use separate connection per thread since sharing a single Connection object is not recommended.
    */
   private static final ThreadLocal<Connection> CONN = new ThreadLocal<>();
+
+  /** Prepared statement for reading values. */
+  private static final ThreadLocal<PreparedStatement> READ_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildReadStatement);
+
+  /** Prepared statement for inserting values. */
+  private static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildInsertStatement);
+
+  /** Build prepared statement for reading values. */
+  private static PreparedStatement buildReadStatement() {
+    try {
+      return CONN.get().prepareStatement(readPreparedStatementString);
+    } catch (SQLException e) {
+      LOG.error("Unable to prepare statement for SQL: " + readPreparedStatementString, e);
+      return null;
+    }
+  }
+
+  /** Build prepared statement for inserting values. */
+  private static PreparedStatement buildInsertStatement() {
+    try {
+      return CONN.get().prepareStatement(insertPreparedStatementString);
+    } catch (SQLException e) {
+      LOG.error("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
+      return null;
+    }
+  }
 
   /** {@inheritDoc} */
   @Override
@@ -52,7 +81,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      PreparedStatement stmt = prepareReadStatement(CONN.get());
+      PreparedStatement stmt = READ_PREPARED_STATEMENT.get();
 
       stmt.setString(1, key);
 
@@ -94,7 +123,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
       if (table.equals(cacheName)) {
-        PreparedStatement stmt = prepareInsertStatement(CONN.get());
+        PreparedStatement stmt = INSERT_PREPARED_STATEMENT.get();
 
         setStatementValues(stmt, key, values);
 
@@ -124,6 +153,13 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     Connection conn0 = CONN.get();
     try {
       if (conn0 != null && !conn0.isClosed()) {
+        if (!READ_PREPARED_STATEMENT.get().isClosed()) {
+          READ_PREPARED_STATEMENT.get().close();
+        }
+        if (!INSERT_PREPARED_STATEMENT.get().isClosed()) {
+          INSERT_PREPARED_STATEMENT.get().close();
+        }
+
         conn0.close();
         CONN.remove();
       }

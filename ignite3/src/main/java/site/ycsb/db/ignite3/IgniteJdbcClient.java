@@ -39,7 +39,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     try {
       return CONN.get().prepareStatement(readPreparedStatementString);
     } catch (SQLException e) {
-      throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
+      throw new RuntimeException("Unable to prepare statement for SQL: " + readPreparedStatementString, e);
     }
   }
 

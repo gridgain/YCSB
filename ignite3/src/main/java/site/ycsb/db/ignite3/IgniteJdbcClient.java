@@ -94,7 +94,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
         }
 
         for (String column : fields) {
-          String val = rs.getString(FIELDS.indexOf(column) + 1);
+          String val = rs.getString(FIELDS.indexOf(column) + 2); //+2 because indexes start from 1 and 1st one is key field
 
           if (val != null) {
             result.put(column, new StringByteIterator(val));

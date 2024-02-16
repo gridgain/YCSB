@@ -5,8 +5,12 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,6 +38,10 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   private static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = ThreadLocal
       .withInitial(IgniteJdbcClient::buildInsertStatement);
 
+  /** Prepared statement for deleting values. */
+  private static final ThreadLocal<PreparedStatement> DELETE_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildDeleteStatement);
+
   /** Build prepared statement for reading values. */
   private static PreparedStatement buildReadStatement() {
     try {
@@ -49,6 +57,15 @@ public class IgniteJdbcClient extends AbstractSqlClient {
       return CONN.get().prepareStatement(insertPreparedStatementString);
     } catch (SQLException e) {
       throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
+    }
+  }
+
+  /** Build prepared statement for deleting values. */
+  private static PreparedStatement buildDeleteStatement() {
+    try {
+      return CONN.get().prepareStatement(deletePreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + deletePreparedStatementString, e);
     }
   }
 
@@ -110,7 +127,30 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   /** {@inheritDoc} */
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    return Status.NOT_IMPLEMENTED;
+    try {
+      if (table.equals(cacheName)) {
+        try (Statement stmt = CONN.get().createStatement()) {
+
+          List<String> updateValuesList = new ArrayList<>();
+          for (Entry<String, ByteIterator> entry : values.entrySet()) {
+            updateValuesList.add(String.format("%s='%s'", entry.getKey(), entry.getValue().toString()));
+          }
+
+          String sql = String.format("UPDATE %s SET %s WHERE %s = '%s'",
+              cacheName, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
+
+          stmt.executeUpdate(sql);
+        }
+      } else {
+        throw new UnsupportedOperationException("Unexpected table name: " + table);
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   /** {@inheritDoc} */
@@ -138,8 +178,23 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   /** {@inheritDoc} */
   @Override
   public Status delete(String table, String key) {
-    // TODO: implement
-    return Status.NOT_IMPLEMENTED;
+    try {
+      if (table.equals(cacheName)) {
+        PreparedStatement stmt = DELETE_PREPARED_STATEMENT.get();
+
+        stmt.setString(1, key);
+
+        stmt.executeUpdate();
+      } else {
+        throw new UnsupportedOperationException("Unexpected table name: " + table);
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error deleting key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   /** {@inheritDoc} */
@@ -153,6 +208,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
         }
         if (!INSERT_PREPARED_STATEMENT.get().isClosed()) {
           INSERT_PREPARED_STATEMENT.get().close();
+        }
+        if (!DELETE_PREPARED_STATEMENT.get().isClosed()) {
+          DELETE_PREPARED_STATEMENT.get().close();
         }
 
         conn0.close();

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -66,6 +67,7 @@ public abstract class IgniteAbstractClient extends DB {
   protected static final String HOSTS_PROPERTY = "hosts";
   protected static final String CLIENT_NODE_NAME = "YCSB client node";
   protected static final List<String> FIELDS = new ArrayList<>();
+  protected static final Set<String> ACCESS_METHODS = new HashSet<>(Arrays.asList("kv", "sql", "jdbc"));
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -182,10 +184,9 @@ public abstract class IgniteAbstractClient extends DB {
   }
 
   private Ignite getEmbeddedServerNode() throws IOException {
-    if (!"kv".equalsIgnoreCase(accessMethod) && !"sql".equalsIgnoreCase(accessMethod)
-        && !"jdbc".equalsIgnoreCase(accessMethod)) {
+    if (ACCESS_METHODS.contains(accessMethod.toLowerCase())) {
       throw new RuntimeException("Wrong value for parameter 'accessMethod'. "
-          + "Expected one of 'kv', 'sql', 'jdbc'. Actual: " + accessMethod);
+          + "Expected one of " + ACCESS_METHODS + " . Actual: " + accessMethod);
     }
 
     String workDirProperty = getProperties().getProperty("workDir", "./ignite-ycsb-work");

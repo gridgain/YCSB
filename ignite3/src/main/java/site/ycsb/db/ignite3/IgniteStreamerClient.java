@@ -61,7 +61,7 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
 
     INIT_COUNT.incrementAndGet();
 
-    synchronized (IgniteSqlClient.class) {
+    synchronized (IgniteStreamerClient.class) {
       if (rvPublisher != null) {
         return;
       }

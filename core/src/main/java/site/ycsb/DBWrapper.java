@@ -153,6 +153,31 @@ public class DBWrapper extends DB {
   }
 
   /**
+   * Read records from the database. Each field/value pair from the result
+   * will be stored in a HashMap.
+   *
+   * @param table The name of the table.
+   * @param keys The list of record keys of the records to read.
+   * @param fields The list of sets of fields to read, or null for all of them.
+   * @param result A HashMap of key/record pairs where record is a Map of field/value pairs.
+   * @return The result of the operation.
+   */
+  public Status read(String table, List<String> keys, List<Set<String>> fields,
+                     HashMap<String, Map<String, ByteIterator>> result) {
+    try (final TraceScope span = tracer.newScope(scopeStringRead)) {
+      long ist = measurements.getIntendedStartTimeNs();
+      long st = System.nanoTime();
+      Status res = db.read(table, keys, fields, result);
+      long en = System.nanoTime();
+      if (isWarmUpDone()) {
+        measure("READ", res, ist, st, en);
+        measurements.reportStatus("READ", res);
+      }
+      return res;
+    }
+  }
+
+  /**
    * Perform a range scan for a set of records in the database.
    * Each field/value pair from the result will be stored in a HashMap.
    *

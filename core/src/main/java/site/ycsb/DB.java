@@ -18,6 +18,8 @@
 package site.ycsb;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -87,6 +89,30 @@ public abstract class DB {
    * @return The result of the operation.
    */
   public abstract Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result);
+
+  /**
+   * Read a set of records/fields from the database.
+   * Each field/value pair from the result will be stored in a HashMap and wrapped to a HashMap by the key.
+   *
+   * @param table The name of the table.
+   * @param keys The list of record keys of the records to read.
+   * @param fields The list of sets of fields to read, or null for all of them.
+   * @param result A HashMap of key/record pairs where record is a Map of field/value pairs.
+   * @return The result of the operation.
+   */
+  public Status read(String table, List<String> keys, List<Set<String>> fields,
+                     HashMap<String, Map<String, ByteIterator>> result) {
+    for (int i = 0; i < keys.size(); i++) {
+      String key = keys.get(i);
+      Map<String, ByteIterator> resultByKey = new LinkedHashMap<>();
+      Status s = read(table, key, fields.get(i), resultByKey);
+      if (!s.isOk()) {
+        return s;
+      }
+      result.put(key, resultByKey);
+    }
+    return Status.OK;
+  }
 
   /**
    * Perform a range scan for a set of records in the database. Each field/value pair from the result will be stored

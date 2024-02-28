@@ -81,6 +81,11 @@ public final class Client {
   public static final String DEFAULT_RECORD_COUNT = "0";
 
   /**
+   * Default batch size.
+   */
+  public static final String DEFAULT_BATCH_SIZE = "0";
+
+  /**
    * The target number of operations to perform.
    */
   public static final String OPERATION_COUNT_PROPERTY = "operationcount";
@@ -94,6 +99,11 @@ public final class Client {
    * The number of records to load into the database initially.
    */
   public static final String RECORD_COUNT_PROPERTY = "recordcount";
+
+  /**
+   * The number of records for batch operations.
+   */
+  public static final String BATCH_SIZE_PROPERTY = "batchsize";
 
   /**
    * The workload class to be loaded.

@@ -17,6 +17,9 @@
 
 package site.ycsb.workloads;
 
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import site.ycsb.*;
 import site.ycsb.generator.*;
 import site.ycsb.generator.UniformLongGenerator;
@@ -365,13 +368,20 @@ public class CoreWorkload extends Workload {
   protected boolean orderedinserts;
   protected long fieldcount;
   protected long recordcount;
+  protected long batchsize;
   protected int zeropadding;
   protected int insertionRetryLimit;
   protected int insertionRetryInterval;
 
   private Measurements measurements = Measurements.getMeasurements();
 
-  private final ThreadLocal<Integer> opsDone = ThreadLocal.withInitial(() -> 0);
+  private final AtomicInteger opsDone = new AtomicInteger(0);
+
+  private final AtomicLong batchKeysCount = new AtomicLong(0L);
+
+  private List<String> batchKeysList = new LinkedList<>();
+
+  private List<Set<String>> batchFieldsList = new LinkedList<>();
 
   public static String buildKeyName(long keynum, int zeropadding, boolean orderedinserts) {
     if (!orderedinserts) {
@@ -438,6 +448,8 @@ public class CoreWorkload extends Workload {
     if (recordcount == 0) {
       recordcount = Integer.MAX_VALUE;
     }
+    batchsize =
+        Long.parseLong(p.getProperty(Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
     int minscanlength =
@@ -742,11 +754,41 @@ public class CoreWorkload extends Workload {
       fields = new HashSet<String>(fieldnames);
     }
 
-    HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
-    db.read(table, keyname, fields, cells);
+    if (batchsize > 1) {
+      // when reads are batched
+      if (batchKeysCount.get() < batchsize && opsDone.get() < recordcount) {
+        // when not reached 'recordcount' or 'batchsize',
+        // accumulate keys to read
+        batchKeysList.add(keyname);
+        batchFieldsList.add(fields);
+        // need to call 'read' to count read operations,
+        // no actual DB read operation should happen
+        db.read(table, keyname, null, null);
+        batchKeysCount.incrementAndGet();
+      } else {
+        // when batch is formed,
+        // batch read
+        HashMap<String, Map<String, ByteIterator>> result = new LinkedHashMap<>();
+        db.read(table, batchKeysList, batchFieldsList, result);
+        batchKeysList = new LinkedList<>();
+        batchKeysCount.set(0L);
 
-    if (dataintegrity && isWarmUpDone()) {
-      verifyRow(keyname, cells);
+        // verify batch of records
+        if (dataintegrity && isWarmUpDone()) {
+          for (Entry<String, Map<String, ByteIterator>> entry : result.entrySet()) {
+            verifyRow(entry.getKey(), (HashMap<String, ByteIterator>) entry.getValue());
+          }
+        }
+      }
+    } else {
+      // read one record
+      HashMap<String, ByteIterator> cells = new HashMap<>();
+      db.read(table, keyname, fields, cells);
+
+      // verify right after reading
+      if (dataintegrity && isWarmUpDone()) {
+        verifyRow(keyname, cells);
+      }
     }
   }
 

@@ -366,6 +366,7 @@ public class CoreWorkload extends Workload {
   protected AcknowledgedCounterGenerator transactioninsertkeysequence;
   protected NumberGenerator scanlength;
   protected boolean orderedinserts;
+  protected boolean isBatched;
   protected long fieldcount;
   protected long recordcount;
   protected long batchsize;
@@ -382,6 +383,8 @@ public class CoreWorkload extends Workload {
   private List<String> batchKeysList = new LinkedList<>();
 
   private List<Set<String>> batchFieldsList = new LinkedList<>();
+
+  private List<Map<String, ByteIterator>> batchValuesList = new LinkedList<>();
 
   public static String buildKeyName(long keynum, int zeropadding, boolean orderedinserts) {
     if (!orderedinserts) {
@@ -450,6 +453,7 @@ public class CoreWorkload extends Workload {
     }
     batchsize =
         Long.parseLong(p.getProperty(Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
+    isBatched = batchsize > 1;
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
     int minscanlength =
@@ -632,7 +636,22 @@ public class CoreWorkload extends Workload {
     Status status;
     int numOfRetries = 0;
     do {
-      status = db.insert(table, dbkey, values);
+      if (!isBatched) {
+        status = db.insert(table, dbkey, values);
+      } else {
+        if (batchKeysCount.get() < batchsize && opsDone.get() < recordcount) {
+          batchKeysList.add(dbkey);
+          batchValuesList.add(values);
+          batchKeysCount.incrementAndGet();
+          status = Status.BATCHED_OK;
+        } else {
+          status = db.batchInsert(table, batchKeysList, batchValuesList);
+          batchKeysList = new LinkedList<>();
+          batchValuesList = new LinkedList<>();
+          batchKeysCount.set(0L);
+        }
+      }
+
       if (null != status && status.isOk()) {
         break;
       }
@@ -754,40 +773,29 @@ public class CoreWorkload extends Workload {
       fields = new HashSet<String>(fieldnames);
     }
 
-    if (batchsize > 1) {
-      // when reads are batched
-      if (batchKeysCount.get() < batchsize && opsDone.get() < recordcount) {
-        // when not reached 'recordcount' or 'batchsize',
-        // accumulate keys to read
-        batchKeysList.add(keyname);
-        batchFieldsList.add(fields);
-        // need to call 'read' to count read operations,
-        // no actual DB read operation should happen
-        db.read(table, keyname, null, null);
-        batchKeysCount.incrementAndGet();
-      } else {
-        // when batch is formed,
-        // batch read
-        HashMap<String, Map<String, ByteIterator>> result = new LinkedHashMap<>();
-        db.read(table, batchKeysList, batchFieldsList, result);
-        batchKeysList = new LinkedList<>();
-        batchKeysCount.set(0L);
-
-        // verify batch of records
-        if (dataintegrity && isWarmUpDone()) {
-          for (Entry<String, Map<String, ByteIterator>> entry : result.entrySet()) {
-            verifyRow(entry.getKey(), (HashMap<String, ByteIterator>) entry.getValue());
-          }
-        }
-      }
-    } else {
-      // read one record
+    if (!isBatched) {
       HashMap<String, ByteIterator> cells = new HashMap<>();
       db.read(table, keyname, fields, cells);
 
-      // verify right after reading
       if (dataintegrity && isWarmUpDone()) {
         verifyRow(keyname, cells);
+      }
+    } else {
+      if (batchKeysCount.get() < batchsize && opsDone.get() < recordcount) {
+        batchKeysList.add(keyname);
+        batchFieldsList.add(fields);
+        batchKeysCount.incrementAndGet();
+      } else {
+        List<Map<String, ByteIterator>> results = new LinkedList<>();
+        db.batchRead(table, batchKeysList, batchFieldsList, results);
+        batchKeysList = new LinkedList<>();
+        batchKeysCount.set(0L);
+
+        if (dataintegrity && isWarmUpDone()) {
+          for (int i = 0; i < batchKeysList.size(); i++) {
+            verifyRow(batchKeysList.get(i), (HashMap<String, ByteIterator>) results.get(i));
+          }
+        }
       }
     }
   }
@@ -888,7 +896,21 @@ public class CoreWorkload extends Workload {
       String dbkey = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
 
       HashMap<String, ByteIterator> values = buildValues(dbkey);
-      db.insert(table, dbkey, values);
+
+      if (!isBatched) {
+        db.insert(table, dbkey, values);
+      } else {
+        if (batchKeysCount.get() < batchsize && opsDone.get() < recordcount) {
+          batchKeysList.add(dbkey);
+          batchValuesList.add(values);
+          batchKeysCount.incrementAndGet();
+        } else {
+          db.batchInsert(table, batchKeysList, batchValuesList);
+          batchKeysList = new LinkedList<>();
+          batchValuesList = new LinkedList<>();
+          batchKeysCount.set(0L);
+        }
+      }
     } finally {
       transactioninsertkeysequence.acknowledge(keynum);
     }

@@ -153,25 +153,25 @@ public class DBWrapper extends DB {
   }
 
   /**
-   * Read records from the database. Each field/value pair from the result
-   * will be stored in a HashMap.
+   * Read a batch of records from the database. Each field/value pair from the result
+   * will be stored in a HashMap and collected to a list.
    *
    * @param table The name of the table.
    * @param keys The list of record keys of the records to read.
    * @param fields The list of sets of fields to read, or null for all of them.
-   * @param result A HashMap of key/record pairs where record is a Map of field/value pairs.
+   * @param results A list of records where record is a Map of field/value pairs.
    * @return The result of the operation.
    */
-  public Status read(String table, List<String> keys, List<Set<String>> fields,
-                     HashMap<String, Map<String, ByteIterator>> result) {
+  public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
+                          List<Map<String, ByteIterator>> results) {
     try (final TraceScope span = tracer.newScope(scopeStringRead)) {
       long ist = measurements.getIntendedStartTimeNs();
       long st = System.nanoTime();
-      Status res = db.read(table, keys, fields, result);
+      Status res = db.batchRead(table, keys, fields, results);
       long en = System.nanoTime();
       if (isWarmUpDone()) {
-        measure("READ", res, ist, st, en);
-        measurements.reportStatus("READ", res);
+        measure("BATCH-READ", res, ist, st, en);
+        measurements.reportStatus("BATCH-READ", res);
       }
       return res;
     }
@@ -264,6 +264,30 @@ public class DBWrapper extends DB {
       if (isWarmUpDone()) {
         measure("INSERT", res, ist, st, en);
         measurements.reportStatus("INSERT", res);
+      }
+      return res;
+    }
+  }
+
+  /**
+   * Insert a batch of records in the database. Field/value pairs of the values list
+   * will be written into the records with the specified record keys.
+   *
+   * @param table The name of the table.
+   * @param keys The list of record keys to insert records by.
+   * @param values A list of records to insert where a record is a HashMap of field/value pairs.
+   * @return The result of the operation.
+   */
+  public Status batchInsert(String table, List<String> keys,
+                            List<Map<String, ByteIterator>> values) {
+    try (final TraceScope span = tracer.newScope(scopeStringInsert)) {
+      long ist = measurements.getIntendedStartTimeNs();
+      long st = System.nanoTime();
+      Status res = db.batchInsert(table, keys, values);
+      long en = System.nanoTime();
+      if (isWarmUpDone()) {
+        measure("BATCH-INSERT", res, ist, st, en);
+        measurements.reportStatus("BATCH-INSERT", res);
       }
       return res;
     }

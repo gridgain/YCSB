@@ -91,25 +91,25 @@ public abstract class DB {
   public abstract Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result);
 
   /**
-   * Read a set of records/fields from the database.
-   * Each field/value pair from the result will be stored in a HashMap and wrapped to a HashMap by the key.
+   * Read a batch of records from the database. Each field/value pair from the result
+   * will be stored in a HashMap and collected to a list.
    *
    * @param table The name of the table.
    * @param keys The list of record keys of the records to read.
    * @param fields The list of sets of fields to read, or null for all of them.
-   * @param result A HashMap of key/record pairs where record is a Map of field/value pairs.
+   * @param results A list of records where record is a Map of field/value pairs.
    * @return The result of the operation.
    */
-  public Status read(String table, List<String> keys, List<Set<String>> fields,
-                     HashMap<String, Map<String, ByteIterator>> result) {
+  public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
+                          List<Map<String, ByteIterator>> results) {
     for (int i = 0; i < keys.size(); i++) {
       String key = keys.get(i);
-      Map<String, ByteIterator> resultByKey = new LinkedHashMap<>();
-      Status s = read(table, key, fields.get(i), resultByKey);
+      Map<String, ByteIterator> values = new LinkedHashMap<>();
+      Status s = read(table, key, fields.get(i), values);
       if (!s.isOk()) {
         return s;
       }
-      result.put(key, resultByKey);
+      results.add(values);
     }
     return Status.OK;
   }
@@ -149,6 +149,27 @@ public abstract class DB {
    * @return The result of the operation.
    */
   public abstract Status insert(String table, String key, Map<String, ByteIterator> values);
+
+  /**
+   * Insert a batch of records in the database. Field/value pairs of the values list
+   * will be written into the records with the specified record keys.
+   *
+   * @param table The name of the table.
+   * @param keys The list of record keys to insert records by.
+   * @param values A list of records to insert where a record is a HashMap of field/value pairs.
+   * @return The result of the operation.
+   */
+  public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
+    for (int i = 0; i < keys.size(); i++) {
+      String key = keys.get(i);
+      Map<String, ByteIterator> value = values.get(i);
+      Status s = insert(table, key, value);
+      if (!s.isOk()) {
+        return s;
+      }
+    }
+    return Status.OK;
+  }
 
   /**
    * Delete a record from the database.

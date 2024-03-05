@@ -45,7 +45,9 @@ public class DBWrapper extends DB {
 
   private static final AtomicBoolean LOG_REPORT_CONFIG = new AtomicBoolean(false);
 
-  private final ThreadLocal<Integer> opsDone = ThreadLocal.withInitial(() -> 0);
+  private long opsDone = 0L;
+
+  private int threadWarmUpOpsCount;
 
   private final String scopeStringCleanup;
   private final String scopeStringDelete;
@@ -55,7 +57,7 @@ public class DBWrapper extends DB {
   private final String scopeStringScan;
   private final String scopeStringUpdate;
 
-  public DBWrapper(final DB db, final Tracer tracer) {
+  public DBWrapper(final DB db, final Tracer tracer, int threadWarmUpOpsCount) {
     this.db = db;
     measurements = Measurements.getMeasurements();
     this.tracer = tracer;
@@ -67,6 +69,7 @@ public class DBWrapper extends DB {
     scopeStringRead = simple + "#read";
     scopeStringScan = simple + "#scan";
     scopeStringUpdate = simple + "#update";
+    this.threadWarmUpOpsCount = threadWarmUpOpsCount;
   }
 
   /**
@@ -315,7 +318,6 @@ public class DBWrapper extends DB {
   }
 
   private boolean isWarmUpDone() {
-    opsDone.set(opsDone.get() + 1);
-    return opsDone.get() > measurements.getWarmUpOps();
+    return ++opsDone > threadWarmUpOpsCount;
   }
 }

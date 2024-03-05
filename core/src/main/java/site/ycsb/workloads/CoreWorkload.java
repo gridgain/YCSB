@@ -17,8 +17,9 @@
 
 package site.ycsb.workloads;
 
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
+import static site.ycsb.Client.DEFAULT_WARMUP_OPS;
+import static site.ycsb.Client.WARM_UP_OPERATIONS_COUNT_PROPERTY;
+
 import java.util.concurrent.atomic.AtomicLong;
 import site.ycsb.*;
 import site.ycsb.generator.*;
@@ -369,6 +370,7 @@ public class CoreWorkload extends Workload {
   protected boolean isBatched;
   protected long fieldcount;
   protected long recordcount;
+  protected long warmUpOps;
   protected long batchsize;
   protected int zeropadding;
   protected int insertionRetryLimit;
@@ -376,7 +378,7 @@ public class CoreWorkload extends Workload {
 
   private Measurements measurements = Measurements.getMeasurements();
 
-  private final AtomicInteger opsDone = new AtomicInteger(0);
+  private static final AtomicLong opsDone = new AtomicLong(0L);
 
   private final AtomicLong batchKeysCount = new AtomicLong(0L);
 
@@ -451,9 +453,28 @@ public class CoreWorkload extends Workload {
     if (recordcount == 0) {
       recordcount = Integer.MAX_VALUE;
     }
+
+    String warmUpOpsProp = p.getProperty(WARM_UP_OPERATIONS_COUNT_PROPERTY, DEFAULT_WARMUP_OPS);
+    try {
+      warmUpOps = Long.parseLong(warmUpOpsProp);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not convert to long warmupops=" + warmUpOps, e);
+    }
+    if (warmUpOps < 0) {
+      System.err.println("Invalid warmUpOps=" + warmUpOps);
+      System.err.println("warmUpOps must not be negative.");
+      System.exit(-1);
+    }
+
     batchsize =
         Long.parseLong(p.getProperty(Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
+    if (batchsize < 1) {
+      System.err.println("Invalid batchsize=" + batchsize);
+      System.err.println("batchsize must be bigger than 0.");
+      System.exit(-1);
+    }
     isBatched = batchsize > 1;
+
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
     int minscanlength =
@@ -709,7 +730,7 @@ public class CoreWorkload extends Workload {
       doTransactionReadModifyWrite(db);
     }
 
-    opsDone.set(opsDone.get() + 1);
+    opsDone.incrementAndGet();
 
     return true;
   }
@@ -965,6 +986,6 @@ public class CoreWorkload extends Workload {
   }
 
   private boolean isWarmUpDone() {
-    return opsDone.get() >= measurements.getWarmUpOps();
+    return opsDone.get() >= warmUpOps;
   }
 }

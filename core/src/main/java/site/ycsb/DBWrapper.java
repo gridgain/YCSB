@@ -17,6 +17,9 @@
 
 package site.ycsb;
 
+import static site.ycsb.Client.BATCH_SIZE_PROPERTY;
+import static site.ycsb.Client.DEFAULT_BATCH_SIZE;
+
 import java.util.Map;
 
 import site.ycsb.measurements.Measurements;
@@ -48,6 +51,8 @@ public class DBWrapper extends DB {
   private long opsDone = 0L;
 
   private int threadWarmUpOpsCount;
+
+  private int batchSize;
 
   private final String scopeStringCleanup;
   private final String scopeStringDelete;
@@ -111,6 +116,9 @@ public class DBWrapper extends DB {
             this.reportLatencyForEachError + " and specific error codes to track" +
             " for latency are: " + this.latencyTrackedErrors.toString());
       }
+
+      batchSize = Integer.parseInt(getProperties().getProperty(BATCH_SIZE_PROPERTY, DEFAULT_BATCH_SIZE));
+      threadWarmUpOpsCount = threadWarmUpOpsCount / batchSize;
     }
   }
 

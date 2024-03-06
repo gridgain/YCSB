@@ -18,7 +18,6 @@
 package site.ycsb;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -102,16 +101,7 @@ public abstract class DB {
    */
   public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
                           List<Map<String, ByteIterator>> results) {
-    for (int i = 0; i < keys.size(); i++) {
-      String key = keys.get(i);
-      Map<String, ByteIterator> values = new LinkedHashMap<>();
-      Status s = read(table, key, fields.get(i), values);
-      if (!s.isOk()) {
-        return s;
-      }
-      results.add(values);
-    }
-    return Status.OK;
+    throw new UnsupportedOperationException();
   }
 
   /**
@@ -160,15 +150,7 @@ public abstract class DB {
    * @return The result of the operation.
    */
   public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
-    for (int i = 0; i < keys.size(); i++) {
-      String key = keys.get(i);
-      Map<String, ByteIterator> value = values.get(i);
-      Status s = insert(table, key, value);
-      if (!s.isOk()) {
-        return s;
-      }
-    }
-    return Status.OK;
+    throw new UnsupportedOperationException();
   }
 
   /**

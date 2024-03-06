@@ -371,6 +371,7 @@ public class CoreWorkload extends Workload {
   protected long fieldcount;
   protected long recordcount;
   protected long warmUpOps;
+  protected long totalrecordcount;
   protected int batchsize;
   protected int zeropadding;
   protected int insertionRetryLimit;
@@ -379,8 +380,6 @@ public class CoreWorkload extends Workload {
   private Measurements measurements = Measurements.getMeasurements();
 
   private final AtomicLong opsDone = new AtomicLong(0L);
-
-  private final AtomicLong batchKeysCount = new AtomicLong(0L);
 
   private List<String> batchKeysList;
 
@@ -479,6 +478,8 @@ public class CoreWorkload extends Workload {
       batchFieldsList = new ArrayList<>(batchsize);
       batchValuesList = new ArrayList<>(batchsize);
     }
+
+    totalrecordcount = recordcount + warmUpOps;
 
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
@@ -668,15 +669,14 @@ public class CoreWorkload extends Workload {
         batchKeysList.add(dbkey);
         batchValuesList.add(values);
 
-        if (batchKeysCount.incrementAndGet() < batchsize
-            && ((isWarmUpDone() && opsDone.get() - warmUpOps + 1 < recordcount)
-            || (!isWarmUpDone() && opsDone.get() + 1 < warmUpOps))) {
-          status = Status.BATCHED_OK;
-        } else {
+        long currentOpNum = opsDone.get() + 1;
+
+        if (batchKeysList.size() == batchsize || currentOpNum == warmUpOps || currentOpNum == totalrecordcount) {
           status = db.batchInsert(table, batchKeysList, batchValuesList);
           batchKeysList.clear();
           batchValuesList.clear();
-          batchKeysCount.set(0L);
+        } else {
+          status = Status.BATCHED_OK;
         }
       }
 
@@ -814,14 +814,13 @@ public class CoreWorkload extends Workload {
       batchKeysList.add(keyname);
       batchFieldsList.add(fields);
 
-      if (batchKeysCount.incrementAndGet() >= batchsize
-          || (isWarmUpDone() && opsDone.get() - warmUpOps + 1 >= recordcount)
-          || (!isWarmUpDone() && opsDone.get() + 1 >= warmUpOps)) {
+      long currentOpNum = opsDone.get() + 1;
+
+      if (batchKeysList.size() == batchsize || currentOpNum == warmUpOps || currentOpNum == totalrecordcount) {
         List<Map<String, ByteIterator>> results = new LinkedList<>();
         db.batchRead(table, batchKeysList, batchFieldsList, results);
         batchKeysList.clear();
         batchFieldsList.clear();
-        batchKeysCount.set(0L);
 
         if (dataintegrity && isWarmUpDone()) {
           for (int i = 0; i < batchKeysList.size(); i++) {
@@ -935,13 +934,12 @@ public class CoreWorkload extends Workload {
         batchKeysList.add(dbkey);
         batchValuesList.add(values);
 
-        if (batchKeysCount.incrementAndGet() >= batchsize
-            || (isWarmUpDone() && opsDone.get() - warmUpOps + 1 >= recordcount)
-            || (!isWarmUpDone() && opsDone.get() + 1 >= warmUpOps)) {
+        long currentOpNum = opsDone.get() + 1;
+
+        if (batchKeysList.size() == batchsize || currentOpNum == warmUpOps || currentOpNum == totalrecordcount) {
           db.batchInsert(table, batchKeysList, batchValuesList);
           batchKeysList.clear();
           batchValuesList.clear();
-          batchKeysCount.set(0L);
         }
       }
     } finally {

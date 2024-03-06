@@ -464,7 +464,7 @@ public final class Client {
         try {
           db = DBFactory.newDB(dbname, props, tracer, threadwarmupopcount);
         } catch (UnknownDBException e) {
-          System.out.println("Unknown DB " + dbname);
+          System.err.println("Unknown DB " + dbname);
           initFailed = true;
           break;
         }

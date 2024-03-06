@@ -382,11 +382,11 @@ public class CoreWorkload extends Workload {
 
   private final AtomicLong batchKeysCount = new AtomicLong(0L);
 
-  private List<String> batchKeysList = new LinkedList<>();
+  private List<String> batchKeysList;
 
-  private List<Set<String>> batchFieldsList = new LinkedList<>();
+  private List<Set<String>> batchFieldsList;
 
-  private List<Map<String, ByteIterator>> batchValuesList = new LinkedList<>();
+  private List<Map<String, ByteIterator>> batchValuesList;
 
   public static String buildKeyName(long keynum, int zeropadding, boolean orderedinserts) {
     if (!orderedinserts) {
@@ -474,6 +474,11 @@ public class CoreWorkload extends Workload {
       System.exit(-1);
     }
     isBatched = batchsize > 1;
+    if (isBatched) {
+      batchKeysList = new ArrayList<>((int) batchsize);
+      batchFieldsList = new ArrayList<>((int) batchsize);
+      batchValuesList = new ArrayList<>((int) batchsize);
+    }
 
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
@@ -669,8 +674,8 @@ public class CoreWorkload extends Workload {
           status = Status.BATCHED_OK;
         } else {
           status = db.batchInsert(table, batchKeysList, batchValuesList);
-          batchKeysList = new LinkedList<>();
-          batchValuesList = new LinkedList<>();
+          batchKeysList.clear();
+          batchValuesList.clear();
           batchKeysCount.set(0L);
         }
       }
@@ -814,7 +819,8 @@ public class CoreWorkload extends Workload {
           || (!isWarmUpDone() && opsDone.get() + 1 >= warmUpOps)) {
         List<Map<String, ByteIterator>> results = new LinkedList<>();
         db.batchRead(table, batchKeysList, batchFieldsList, results);
-        batchKeysList = new LinkedList<>();
+        batchKeysList.clear();
+        batchFieldsList.clear();
         batchKeysCount.set(0L);
 
         if (dataintegrity && isWarmUpDone()) {
@@ -933,8 +939,8 @@ public class CoreWorkload extends Workload {
             || (isWarmUpDone() && opsDone.get() - warmUpOps + 1 >= recordcount)
             || (!isWarmUpDone() && opsDone.get() + 1 >= warmUpOps)) {
           db.batchInsert(table, batchKeysList, batchValuesList);
-          batchKeysList = new LinkedList<>();
-          batchValuesList = new LinkedList<>();
+          batchKeysList.clear();
+          batchValuesList.clear();
           batchKeysCount.set(0L);
         }
       }

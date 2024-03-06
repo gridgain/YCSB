@@ -371,7 +371,7 @@ public class CoreWorkload extends Workload {
   protected long fieldcount;
   protected long recordcount;
   protected long warmUpOps;
-  protected long batchsize;
+  protected int batchsize;
   protected int zeropadding;
   protected int insertionRetryLimit;
   protected int insertionRetryInterval;
@@ -467,7 +467,7 @@ public class CoreWorkload extends Workload {
     }
 
     batchsize =
-        Long.parseLong(p.getProperty(Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
+        Integer.parseInt(p.getProperty(Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
     if (batchsize < 1) {
       System.err.println("Invalid batchsize=" + batchsize);
       System.err.println("batchsize must be bigger than 0.");
@@ -475,9 +475,9 @@ public class CoreWorkload extends Workload {
     }
     isBatched = batchsize > 1;
     if (isBatched) {
-      batchKeysList = new ArrayList<>((int) batchsize);
-      batchFieldsList = new ArrayList<>((int) batchsize);
-      batchValuesList = new ArrayList<>((int) batchsize);
+      batchKeysList = new ArrayList<>(batchsize);
+      batchFieldsList = new ArrayList<>(batchsize);
+      batchValuesList = new ArrayList<>(batchsize);
     }
 
     String requestdistrib =

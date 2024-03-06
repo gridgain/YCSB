@@ -378,7 +378,7 @@ public class CoreWorkload extends Workload {
 
   private Measurements measurements = Measurements.getMeasurements();
 
-  private static final AtomicLong opsDone = new AtomicLong(0L);
+  private final AtomicLong opsDone = new AtomicLong(0L);
 
   private final AtomicLong batchKeysCount = new AtomicLong(0L);
 

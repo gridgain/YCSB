@@ -453,12 +453,8 @@ public class CoreWorkload extends Workload {
       recordcount = Integer.MAX_VALUE;
     }
 
-    String warmUpOpsProp = p.getProperty(WARM_UP_OPERATIONS_COUNT_PROPERTY, DEFAULT_WARMUP_OPS);
-    try {
-      warmUpOps = Long.parseLong(warmUpOpsProp);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Could not convert to long warmupops=" + warmUpOps, e);
-    }
+    warmUpOps =
+        Long.parseLong(p.getProperty(WARM_UP_OPERATIONS_COUNT_PROPERTY, DEFAULT_WARMUP_OPS));
     if (warmUpOps < 0) {
       System.err.println("Invalid warmUpOps=" + warmUpOps);
       System.err.println("warmUpOps must not be negative.");
@@ -524,11 +520,7 @@ public class CoreWorkload extends Workload {
       System.out.println("Data integrity is enabled.");
     }
 
-    if (p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") == 0) {
-      orderedinserts = false;
-    } else {
-      orderedinserts = true;
-    }
+    orderedinserts = p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") != 0;
 
     keysequence = new CounterGenerator(insertstart);
     operationchooser = createOperationGenerator(p);

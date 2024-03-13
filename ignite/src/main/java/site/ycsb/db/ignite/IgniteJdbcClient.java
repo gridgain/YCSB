@@ -108,11 +108,21 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
       deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?", cacheName, PRIMARY_COLUMN_NAME);
 
-      Set<String> addrs = new HashSet<>();
-      cluster.cluster().nodes().forEach(clusterNode -> addrs.addAll(clusterNode.addresses()));
-      String hosts = String.join(",", addrs);
+      String hostsStr;
 
-      String url = "jdbc:ignite:thin://" + hosts;
+      if (useEmbeddedIgnite) {
+        Set<String> addrs = new HashSet<>();
+        cluster.cluster().nodes().forEach(clusterNode -> addrs.addAll(clusterNode.addresses()));
+        hostsStr = String.join(",", addrs);
+      } else {
+        hostsStr = hosts;
+      }
+
+      //workaround for https://ggsystems.atlassian.net/browse/IGN-23887
+      //use only one cluster node address for connection
+      hostsStr = hostsStr.split(",")[0];
+
+      String url = "jdbc:ignite:thin://" + hostsStr;
       try {
         CONN.set(DriverManager.getConnection(url));
       } catch (Exception e) {

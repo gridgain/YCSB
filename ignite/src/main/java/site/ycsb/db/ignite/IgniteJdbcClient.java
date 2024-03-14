@@ -30,61 +30,100 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
 
   public static final Logger LOG = LogManager.getLogger(IgniteJdbcClient.class);
 
-  /** JDBC connection. */
-  private Connection connection;
+  /** SQL string of prepared statement for reading values. */
+  protected static String readPreparedStatementString;
+
+  /** SQL string of prepared statement for inserting values. */
+  protected static String insertPreparedStatementString;
+
+  /** SQL string of prepared statement for deleting values. */
+  protected static String deletePreparedStatementString;
+
+  /**
+   * Use separate connection per thread since sharing a single Connection object is not recommended.
+   */
+  private static final ThreadLocal<Connection> CONN = new ThreadLocal<>();
 
   /** Prepared statement for reading values. */
-  private PreparedStatement psRead;
+  private static final ThreadLocal<PreparedStatement> READ_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildReadStatement);
 
   /** Prepared statement for inserting values. */
-  private PreparedStatement psInsert;
+  private static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildInsertStatement);
 
   /** Prepared statement for deleting values. */
-  private PreparedStatement psDelete;
+  private static final ThreadLocal<PreparedStatement> DELETE_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildDeleteStatement);
+
+  /** Build prepared statement for reading values. */
+  private static PreparedStatement buildReadStatement() {
+    try {
+      return CONN.get().prepareStatement(readPreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + readPreparedStatementString, e);
+    }
+  }
+
+  /** Build prepared statement for inserting values. */
+  private static PreparedStatement buildInsertStatement() {
+    try {
+      return CONN.get().prepareStatement(insertPreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
+    }
+  }
+
+  /** Build prepared statement for deleting values. */
+  private static PreparedStatement buildDeleteStatement() {
+    try {
+      return CONN.get().prepareStatement(deletePreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + deletePreparedStatementString, e);
+    }
+  }
 
   /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
     super.init();
 
-    String hostsStr;
+    synchronized (IgniteJdbcClient.class) {
+      if (readPreparedStatementString != null || insertPreparedStatementString != null
+          || deletePreparedStatementString != null) {
+        return;
+      }
 
-    if (useEmbeddedIgnite) {
-      Set<String> addrs = new HashSet<>();
-      cluster.cluster().nodes().forEach(clusterNode -> addrs.addAll(clusterNode.addresses()));
-      hostsStr = String.join(",", addrs);
-    } else {
-      hostsStr = hosts;
-    }
+      readPreparedStatementString = String.format("SELECT * FROM %s WHERE %s = ?", cacheName, PRIMARY_COLUMN_NAME);
 
-    String url = "jdbc:ignite:thin://" + hostsStr;
+      List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
+      columns.addAll(FIELDS);
 
-    try {
-      connection = DriverManager.getConnection(url);
-    } catch (Exception e) {
-      throw new DBException(e);
-    }
+      String columnsString = String.join(", ", columns);
 
-    List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
-    columns.addAll(FIELDS);
-    String columnsStr = String.join(", ", columns);
-    String valuesStr = String.join(", ", Collections.nCopies(columns.size(), "?"));
+      String valuesString = String.join(", ", Collections.nCopies(columns.size(), "?"));
 
-    String psReadStr = String.format("SELECT * FROM %s WHERE %s = ?",
-        cacheName, PRIMARY_COLUMN_NAME);
+      insertPreparedStatementString = String.format("INSERT INTO %s (%s) VALUES (%s)",
+          cacheName, columnsString, valuesString);
 
-    String psInsertStr = String.format("INSERT INTO %s (%s) VALUES (%s)",
-        cacheName, columnsStr, valuesStr);
+      deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?", cacheName, PRIMARY_COLUMN_NAME);
 
-    String psDeleteStr = String.format("DELETE * FROM %s WHERE %s = ?",
-        cacheName, PRIMARY_COLUMN_NAME);
+      String hostsStr;
 
-    try {
-      psRead = connection.prepareStatement(psReadStr);
-      psInsert = connection.prepareStatement(psInsertStr);
-      psDelete = connection.prepareStatement(psDeleteStr);
-    } catch (Exception e) {
-      throw new DBException(e);
+      if (useEmbeddedIgnite) {
+        Set<String> addrs = new HashSet<>();
+        cluster.cluster().nodes().forEach(clusterNode -> addrs.addAll(clusterNode.addresses()));
+        hostsStr = String.join(",", addrs);
+      } else {
+        hostsStr = hosts;
+      }
+
+      String url = "jdbc:ignite:thin://" + hostsStr;
+      try {
+        CONN.set(DriverManager.getConnection(url));
+      } catch (Exception e) {
+        throw new DBException(e);
+      }
     }
   }
 
@@ -92,7 +131,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      PreparedStatement stmt = psRead;
+      PreparedStatement stmt = READ_PREPARED_STATEMENT.get();
 
       stmt.setString(1, key);
 
@@ -129,7 +168,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
       if (table.equals(cacheName)) {
-        try (Statement stmt = connection.createStatement()) {
+        try (Statement stmt = CONN.get().createStatement()) {
 
           List<String> updateValuesList = new ArrayList<>();
           for (Entry<String, ByteIterator> entry : values.entrySet()) {
@@ -158,7 +197,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
       if (table.equals(cacheName)) {
-        PreparedStatement stmt = psInsert;
+        PreparedStatement stmt = INSERT_PREPARED_STATEMENT.get();
 
         setStatementValues(stmt, key, values);
 
@@ -180,7 +219,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   public Status delete(String table, String key) {
     try {
       if (table.equals(cacheName)) {
-        PreparedStatement stmt = psDelete;
+        PreparedStatement stmt = DELETE_PREPARED_STATEMENT.get();
 
         stmt.setString(1, key);
 
@@ -200,20 +239,21 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
-    Connection conn0 = connection;
+    Connection conn0 = CONN.get();
     try {
       if (conn0 != null && !conn0.isClosed()) {
-        if (!psRead.isClosed()) {
-          psRead.close();
+        if (!READ_PREPARED_STATEMENT.get().isClosed()) {
+          READ_PREPARED_STATEMENT.get().close();
         }
-        if (!psInsert.isClosed()) {
-          psInsert.close();
+        if (!INSERT_PREPARED_STATEMENT.get().isClosed()) {
+          INSERT_PREPARED_STATEMENT.get().close();
         }
-        if (!psDelete.isClosed()) {
-          psDelete.close();
+        if (!DELETE_PREPARED_STATEMENT.get().isClosed()) {
+          DELETE_PREPARED_STATEMENT.get().close();
         }
 
         conn0.close();
+        CONN.remove();
       }
     } catch (Exception e) {
       throw new DBException(e);

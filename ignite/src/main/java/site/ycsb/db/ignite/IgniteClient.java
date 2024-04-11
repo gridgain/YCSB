@@ -62,8 +62,7 @@ public class IgniteClient extends IgniteAbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  public Status read(String table, String key, Set<String> fields,
-                     Map<String, ByteIterator> result) {
+  public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
       if (!table.equals(cacheName)) {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
@@ -82,7 +81,7 @@ public class IgniteClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
-      List<Map<String, ByteIterator>> results) {
+                          List<Map<String, ByteIterator>> results) {
     try {
       if (!table.equals(cacheName)) {
         throw new UnsupportedOperationException("Unexpected table name: " + table);
@@ -114,8 +113,7 @@ public class IgniteClient extends IgniteAbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  public Status update(String table, String key,
-                       Map<String, ByteIterator> values) {
+  public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
       cache.invoke(key, new Updater(values));
 
@@ -129,8 +127,7 @@ public class IgniteClient extends IgniteAbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  public Status insert(String table, String key,
-      Map<String, ByteIterator> values) {
+  public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
       if (!table.equals(cacheName)) {
         throw new UnsupportedOperationException("Unexpected table name: " + table);

@@ -62,53 +62,6 @@ public class IgniteClient extends IgniteAbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  public Status insert(String table, String key,
-      Map<String, ByteIterator> values) {
-    try {
-      if (!table.equals(cacheName)) {
-        throw new UnsupportedOperationException("Unexpected table name: " + table);
-      }
-
-      BinaryObject binObj = convert(values);
-
-      cache.put(key, binObj);
-
-      return Status.OK;
-    } catch (Exception e) {
-      log.error(String.format("Error inserting key: %s", key), e);
-
-      return Status.ERROR;
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
-    try {
-      if (!table.equals(cacheName)) {
-        throw new UnsupportedOperationException("Unexpected table name: " + table);
-      }
-
-      Map<String, BinaryObject> map = new LinkedHashMap<>();
-
-      for (int i = 0; i < keys.size(); i++) {
-        BinaryObject binObj = convert(values.get(i));
-
-        map.put(keys.get(i), binObj);
-      }
-
-      cache.putAll(map);
-
-      return Status.OK;
-    } catch (Exception e) {
-      log.error("Error inserting batch of keys.", e);
-
-      return Status.ERROR;
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
@@ -169,6 +122,53 @@ public class IgniteClient extends IgniteAbstractClient {
       return Status.OK;
     } catch (Exception e) {
       log.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status insert(String table, String key,
+      Map<String, ByteIterator> values) {
+    try {
+      if (!table.equals(cacheName)) {
+        throw new UnsupportedOperationException("Unexpected table name: " + table);
+      }
+
+      BinaryObject binObj = convert(values);
+
+      cache.put(key, binObj);
+
+      return Status.OK;
+    } catch (Exception e) {
+      log.error(String.format("Error inserting key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
+    try {
+      if (!table.equals(cacheName)) {
+        throw new UnsupportedOperationException("Unexpected table name: " + table);
+      }
+
+      Map<String, BinaryObject> map = new LinkedHashMap<>();
+
+      for (int i = 0; i < keys.size(); i++) {
+        BinaryObject binObj = convert(values.get(i));
+
+        map.put(keys.get(i), binObj);
+      }
+
+      cache.putAll(map);
+
+      return Status.OK;
+    } catch (Exception e) {
+      log.error("Error inserting batch of keys.", e);
 
       return Status.ERROR;
     }

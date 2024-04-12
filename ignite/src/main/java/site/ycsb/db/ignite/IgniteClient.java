@@ -64,10 +64,6 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      if (!table.equals(cacheName)) {
-        throw new UnsupportedOperationException("Unexpected table name: " + table);
-      }
-
       BinaryObject binObj = cache.get(key);
 
       return convert(binObj, fields, result);
@@ -83,10 +79,6 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
                           List<Map<String, ByteIterator>> results) {
     try {
-      if (!table.equals(cacheName)) {
-        throw new UnsupportedOperationException("Unexpected table name: " + table);
-      }
-
       Map<String, BinaryObject> map = cache.getAll(new HashSet<>(keys));
 
       for (int i = 0; i < keys.size(); i++) {
@@ -129,10 +121,6 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      if (!table.equals(cacheName)) {
-        throw new UnsupportedOperationException("Unexpected table name: " + table);
-      }
-
       BinaryObject binObj = convert(values);
 
       cache.put(key, binObj);
@@ -149,10 +137,6 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
     try {
-      if (!table.equals(cacheName)) {
-        throw new UnsupportedOperationException("Unexpected table name: " + table);
-      }
-
       Map<String, BinaryObject> map = new LinkedHashMap<>();
 
       for (int i = 0; i < keys.size(); i++) {

@@ -115,8 +115,16 @@ public abstract class IgniteAbstractClient extends DB {
 
   /**
    * Used to choose storage engine (e.g., 'aipersist' or 'rocksdb').
+   * @deprecated Removed in <a href="https://ggsystems.atlassian.net/browse/IGN-23905">IGN-23905</a>
    */
+  @Deprecated
   protected static String dbEngine;
+
+  /**
+   * Used to choose storage profiles separated by comma
+   * (e.g., 'default', 'default_aimem', 'default_aipersist,default_rocksdb', etc.).
+   */
+  protected static String storageProfiles;
 
   /**
    * Used to choose replication factor value.
@@ -146,6 +154,10 @@ public abstract class IgniteAbstractClient extends DB {
         useEmbeddedIgnite = Boolean.parseBoolean(getProperties().getProperty("useEmbedded", "false"));
         disableFsync = Boolean.parseBoolean(getProperties().getProperty("disableFsync", "false"));
         dbEngine = getProperties().getProperty("dbEngine", "");
+        storageProfiles = getProperties().getProperty("storage_profiles", "");
+        if (storageProfiles.isEmpty() && !dbEngine.isEmpty()) {
+          storageProfiles = dbEngine;
+        }
         replicas = getProperties().getProperty("replicas", "");
         partitions = getProperties().getProperty("partitions", "");
 
@@ -245,22 +257,10 @@ public abstract class IgniteAbstractClient extends DB {
           .map(e -> e + " VARCHAR")
           .collect(Collectors.joining(", "));
 
-      String createZoneReq = "";
-      String withZoneName = "";
-      if (!dbEngine.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()) {
-        String reqDbEngine = dbEngine.isEmpty() ? "" : " ENGINE " + dbEngine;
-        String paramReplicas = replicas.isEmpty() ? "" : "replicas=" + replicas;
-        String paramPartitions = partitions.isEmpty() ? "" : "partitions=" + partitions;
-        String params = Stream.of(paramReplicas, paramPartitions)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(", "));
-        String reqWithParams = params.isEmpty() ? "" : " WITH " + params;
+      String createZoneReq = createZoneSQL();
 
-        createZoneReq = "CREATE ZONE IF NOT EXISTS " + DEFAULT_ZONE_NAME + reqDbEngine + reqWithParams + ";";
-        withZoneName = String.format(" WITH PRIMARY_ZONE='%s';", DEFAULT_ZONE_NAME);
-
-        LOG.info("Create zone request: {}", createZoneReq);
-      }
+      String withZoneName = createZoneReq.isEmpty() ?
+          "" : String.format(" WITH PRIMARY_ZONE='%s';", DEFAULT_ZONE_NAME);
 
       String createTableReq = "CREATE TABLE IF NOT EXISTS " + cacheName + " ("
           + PRIMARY_COLUMN_NAME + " VARCHAR PRIMARY KEY, "
@@ -282,6 +282,27 @@ public abstract class IgniteAbstractClient extends DB {
     } catch (Exception e) {
       throw new DBException(e);
     }
+  }
+
+  private String createZoneSQL() {
+    if (storageProfiles.isEmpty() && replicas.isEmpty() && partitions.isEmpty()) {
+      return "";
+    }
+
+    String paramStorageProfiles = String.format("STORAGE_PROFILES='%s'",
+            storageProfiles.isEmpty() ? "default" : storageProfiles);
+    String paramReplicas = replicas.isEmpty() ? "" : "replicas=" + replicas;
+    String paramPartitions = partitions.isEmpty() ? "" : "partitions=" + partitions;
+    String params = Stream.of(paramStorageProfiles, paramReplicas, paramPartitions)
+        .filter(s -> !s.isEmpty())
+        .collect(Collectors.joining(", "));
+    String reqWithParams = params.isEmpty() ? "" : " WITH " + params;
+
+    String createZoneReq = "CREATE ZONE IF NOT EXISTS " + DEFAULT_ZONE_NAME + reqWithParams + ";";
+
+    LOG.info("Create zone request: {}", createZoneReq);
+
+    return createZoneReq;
   }
 
   private static long entriesInTable(Ignite ignite0, String tableName) throws DBException {

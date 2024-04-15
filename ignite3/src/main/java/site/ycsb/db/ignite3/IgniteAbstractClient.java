@@ -155,7 +155,11 @@ public abstract class IgniteAbstractClient extends DB {
         disableFsync = Boolean.parseBoolean(getProperties().getProperty("disableFsync", "false"));
         dbEngine = getProperties().getProperty("dbEngine", "");
         storageProfiles = getProperties().getProperty("storage_profiles", "");
+        // backward compatibility of setting 'dbEngine' as storage engine name only.
         if (storageProfiles.isEmpty() && !dbEngine.isEmpty()) {
+          if (!dbEngine.startsWith("default_")) {
+            dbEngine = "default_" + dbEngine;
+          }
           storageProfiles = dbEngine;
         }
         replicas = getProperties().getProperty("replicas", "");

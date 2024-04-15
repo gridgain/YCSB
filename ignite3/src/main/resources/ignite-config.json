@@ -10,15 +10,15 @@
   "storage": {
     "profiles": [
       {
-        "name": "aimem",
+        "name": "default_aimem",
         "engine": "aimem"
       },
       {
-        "name": "aipersist",
+        "name": "default_aipersist",
         "engine": "aipersist"
       },
       {
-        "name": "rocksdb",
+        "name": "default_rocksdb",
         "engine": "rocksDb"
       }
     ]

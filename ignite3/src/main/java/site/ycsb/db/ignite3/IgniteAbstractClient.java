@@ -158,7 +158,7 @@ public abstract class IgniteAbstractClient extends DB {
         // backward compatibility of setting 'dbEngine' as storage engine name only.
         if (storageProfiles.isEmpty() && !dbEngine.isEmpty()) {
           if (!dbEngine.startsWith("default_")) {
-            dbEngine = "default_" + dbEngine;
+            dbEngine = "default_" + dbEngine.toLowerCase();
           }
           storageProfiles = dbEngine;
         }

@@ -155,13 +155,16 @@ public abstract class IgniteAbstractClient extends DB {
         disableFsync = Boolean.parseBoolean(getProperties().getProperty("disableFsync", "false"));
         dbEngine = getProperties().getProperty("dbEngine", "");
         storageProfiles = getProperties().getProperty("storage_profiles", "");
+
         // backward compatibility of setting 'dbEngine' as storage engine name only.
         if (storageProfiles.isEmpty() && !dbEngine.isEmpty()) {
           if (!dbEngine.startsWith("default_")) {
             dbEngine = "default_" + dbEngine.toLowerCase();
           }
+
           storageProfiles = dbEngine;
         }
+
         replicas = getProperties().getProperty("replicas", "");
         partitions = getProperties().getProperty("partitions", "");
 
@@ -185,6 +188,7 @@ public abstract class IgniteAbstractClient extends DB {
         }
 
         hosts = getProperties().getProperty(HOSTS_PROPERTY);
+
         if (!useEmbeddedIgnite && hosts == null) {
           throw new DBException(String.format(
               "Required property \"%s\" missing for Ignite Cluster",
@@ -207,6 +211,7 @@ public abstract class IgniteAbstractClient extends DB {
     createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
     rView = node.tables().table(cacheName).recordView();
+
     if (kvView == null) {
       throw new DBException("Failed to find cache: " + cacheName);
     }
@@ -217,6 +222,7 @@ public abstract class IgniteAbstractClient extends DB {
     createTestTable(node);
     kvView = node.tables().table(cacheName).keyValueView();
     rView = node.tables().table(cacheName).recordView();
+
     if (kvView == null) {
       throw new DBException("Failed to find cache: " + cacheName);
     }
@@ -275,6 +281,7 @@ public abstract class IgniteAbstractClient extends DB {
       if (!createZoneReq.isEmpty()) {
         node0.sql().execute(null, createZoneReq).close();
       }
+
       node0.sql().execute(null, createTableReq).close();
 
       boolean cachePresent = waitForCondition(() -> node.tables().table(cacheName) != null,

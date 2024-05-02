@@ -706,15 +706,7 @@ public final class Client {
    * Parse string (with possible modifiers: k=1000, and m=1000000) to int.
    */
   public static int parseIntWithModifiers(String value) {
-    if (value.endsWith("k") || value.endsWith("K")) {
-      return Integer.parseInt(value.substring(0, value.length() - 1)) * 1000;
-    }
-
-    if (value.endsWith("m") || value.endsWith("M")) {
-      return Integer.parseInt(value.substring(0, value.length() - 1)) * 1000000;
-    }
-
-    return Integer.parseInt(value);
+    return (int) parseLongWithModifiers(value);
   }
 
   /**
@@ -722,11 +714,11 @@ public final class Client {
    */
   public static long parseLongWithModifiers(String value) {
     if (value.endsWith("k") || value.endsWith("K")) {
-      return Long.parseLong(value.substring(0, value.length() - 1)) * 1000;
+      return (long) (Double.parseDouble(value.substring(0, value.length() - 1)) * 1000);
     }
 
     if (value.endsWith("m") || value.endsWith("M")) {
-      return Long.parseLong(value.substring(0, value.length() - 1)) * 1000000;
+      return (long) (Double.parseDouble(value.substring(0, value.length() - 1)) * 1000000);
     }
 
     return Long.parseLong(value);

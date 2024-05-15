@@ -19,7 +19,7 @@
       },
       {
         "name": "default_rocksdb",
-        "engine": "rocksDb"
+        "engine": "rocksdb"
       }
     ]
   }

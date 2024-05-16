@@ -8,7 +8,7 @@ import java.util.function.Function;
  *
  * @param <T> Parameter value type.
  */
-public class IgniteParam<T> {
+public final class IgniteParam<T> {
   public static final IgniteParam<Boolean> DEBUG = new IgniteParam<>("debug", false,
       Boolean::parseBoolean);
 
@@ -32,17 +32,17 @@ public class IgniteParam<T> {
   /**
    * Parameter name.
    */
-  String parameter;
+  private String parameter;
 
   /**
    * Default parameter value.
    */
-  T defaultValue;
+  private T defaultValue;
 
   /**
    * Parsing function to get parameter value from property.
    */
-  Function<String, T> parser;
+  private Function<String, T> parser;
 
   private IgniteParam(String parameter, T defaultValue, Function<String, T> parser) {
     this.parameter = parameter;

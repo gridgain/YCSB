@@ -7,6 +7,9 @@ import java.util.Set;
 import site.ycsb.ByteIterator;
 import site.ycsb.ClientThread;
 
+/**
+ * Thread state for CoreWorkload.
+ */
 public class CoreWorkloadThreadState {
 
   private int payloadOpsCount;
@@ -45,48 +48,24 @@ public class CoreWorkloadThreadState {
     return payloadOpsCount;
   }
 
-  public void setPayloadOpsCount(int payloadOpsCount) {
-    this.payloadOpsCount = payloadOpsCount;
-  }
-
   public int getWarmupOpsCount() {
     return warmupOpsCount;
-  }
-
-  public void setWarmupOpsCount(int warmupOpsCount) {
-    this.warmupOpsCount = warmupOpsCount;
   }
 
   public int getTotalOpsCount() {
     return totalOpsCount;
   }
 
-  public void setTotalOpsCount(int totalOpsCount) {
-    this.totalOpsCount = totalOpsCount;
-  }
-
   public int getPayloadOpsDone() {
     return payloadOpsDone;
-  }
-
-  public void setPayloadOpsDone(int payloadOpsDone) {
-    this.payloadOpsDone = payloadOpsDone;
   }
 
   public int getWarmupOpsDone() {
     return warmupOpsDone;
   }
 
-  public void setWarmupOpsDone(int warmupOpsDone) {
-    this.warmupOpsDone = warmupOpsDone;
-  }
-
   public int getTotalOpsDone() {
     return totalOpsDone;
-  }
-
-  public void setTotalOpsDone(int totalOpsDone) {
-    this.totalOpsDone = totalOpsDone;
   }
 
   public List<String> getBatchKeysList() {
@@ -103,5 +82,23 @@ public class CoreWorkloadThreadState {
 
   public boolean isWarmUpDone() {
     return warmupOpsDone >= warmupOpsCount;
+  }
+
+  public boolean isBatchPrepared(int batchSize) {
+    int currentOpNum = totalOpsDone + 1;
+
+    return getBatchKeysList().size() == batchSize
+        || currentOpNum == warmupOpsCount
+        || currentOpNum == totalOpsCount;
+  }
+
+  public CoreWorkloadThreadState incrementOps() {
+    if (isWarmUpDone()) {
+      payloadOpsDone++;
+    } else {
+      warmupOpsDone++;
+    }
+    totalOpsDone++;
+    return this;
   }
 }

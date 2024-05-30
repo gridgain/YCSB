@@ -22,7 +22,6 @@ import static site.ycsb.Client.WARM_UP_OPERATIONS_COUNT_PROPERTY;
 import static site.ycsb.Client.parseIntWithModifiers;
 import static site.ycsb.Client.parseLongWithModifiers;
 
-import java.util.concurrent.atomic.AtomicLong;
 import site.ycsb.*;
 import site.ycsb.generator.*;
 import site.ycsb.generator.UniformLongGenerator;
@@ -626,7 +625,8 @@ public class CoreWorkload extends Workload {
   }
 
   @Override
-  public Object initThread(Properties p, int mythreadid, int threadcount, ClientThread thread) throws WorkloadException {
+  public Object initThread(Properties p, int mythreadid, int threadcount, ClientThread thread)
+      throws WorkloadException {
     CoreWorkloadThreadState threadState = new CoreWorkloadThreadState(thread);
 
     if (isBatched) {
@@ -659,11 +659,7 @@ public class CoreWorkload extends Workload {
         threadState.getBatchKeysList().add(dbkey);
         threadState.getBatchValuesList().add(values);
 
-        long currentOpNum = threadState.getTotalOpsDone() + 1;
-
-        if (threadState.getBatchKeysList().size() == batchsize
-            || currentOpNum == threadState.getWarmupOpsCount()
-            || currentOpNum == threadState.getTotalOpsCount()) {
+        if (threadState.isBatchPrepared(batchsize)) {
           status = db.batchInsert(table, threadState.getBatchKeysList(), threadState.getBatchValuesList());
           threadState.getBatchKeysList().clear();
           threadState.getBatchValuesList().clear();
@@ -696,10 +692,7 @@ public class CoreWorkload extends Workload {
       }
     } while (true);
 
-    if (!threadState.isWarmUpDone()) {
-      threadState.setWarmupOpsDone(threadState.getWarmupOpsDone() + 1);
-    }
-    threadState.setTotalOpsDone(threadState.getTotalOpsDone() + 1);
+    threadState.incrementOps();
 
     return null != status && status.isOk();
   }
@@ -736,10 +729,7 @@ public class CoreWorkload extends Workload {
       doTransactionReadModifyWrite(db, threadState);
     }
 
-    if (!threadState.isWarmUpDone()) {
-      threadState.setWarmupOpsDone(threadState.getWarmupOpsDone() + 1);
-    }
-    threadState.setTotalOpsDone(threadState.getTotalOpsDone() + 1);
+    threadState.incrementOps();
 
     return true;
   }
@@ -814,11 +804,7 @@ public class CoreWorkload extends Workload {
       threadState.getBatchKeysList().add(keyname);
       threadState.getBatchFieldsList().add(fields);
 
-      long currentOpNum = threadState.getTotalOpsDone() + 1;
-
-      if (threadState.getBatchKeysList().size() == batchsize
-          || currentOpNum == threadState.getWarmupOpsCount()
-          || currentOpNum == threadState.getTotalOpsCount()) {
+      if (threadState.isBatchPrepared(batchsize)) {
         List<Map<String, ByteIterator>> results = new LinkedList<>();
         db.batchRead(table, threadState.getBatchKeysList(), threadState.getBatchFieldsList(), results);
         threadState.getBatchKeysList().clear();
@@ -936,11 +922,7 @@ public class CoreWorkload extends Workload {
         threadState.getBatchKeysList().add(dbkey);
         threadState.getBatchValuesList().add(values);
 
-        long currentOpNum = threadState.getTotalOpsDone() + 1;
-
-        if (threadState.getBatchKeysList().size() == batchsize
-            || currentOpNum == threadState.getWarmupOpsCount()
-            || currentOpNum == threadState.getTotalOpsCount()) {
+        if (threadState.isBatchPrepared(batchsize)) {
           db.batchInsert(table, threadState.getBatchKeysList(), threadState.getBatchValuesList());
           threadState.getBatchKeysList().clear();
           threadState.getBatchValuesList().clear();

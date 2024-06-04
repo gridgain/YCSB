@@ -49,12 +49,16 @@ public class DBWrapper extends DB {
 
   private static final AtomicBoolean LOG_REPORT_CONFIG = new AtomicBoolean(false);
 
+  /** Number of batch operations performed. */
   private long batchOpsDone = 0L;
 
+  /** Number of warm-up operations to perform (records to process). */
   private int warmUpOpsCount;
 
+  /** Number of batch warm-up operations to perform. */
   private int warmUpBatchOps;
 
+  /** Batch size. */
   private int batchSize;
 
   private final String scopeStringCleanup;

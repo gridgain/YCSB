@@ -26,22 +26,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
   private static final AtomicInteger SQL_INIT_COUNT = new AtomicInteger(0);
 
   /** Statement for reading values. */
-  private static final ThreadLocal<Statement> READ_STATEMENT = ThreadLocal
-      .withInitial(IgniteSqlClient::buildReadStatement);
+  private Statement readStatement;
 
   /** Statement for inserting values. */
-  private static final ThreadLocal<Statement> INSERT_STATEMENT = ThreadLocal
-      .withInitial(IgniteSqlClient::buildInsertStatement);
-
-  /** Build statement for reading values. */
-  private static Statement buildReadStatement() {
-    return node.sql().createStatement(readPreparedStatementString);
-  }
-
-  /** Build statement for inserting values. */
-  private static Statement buildInsertStatement() {
-    return node.sql().createStatement(insertPreparedStatementString);
-  }
+  private Statement insertStatement;
 
   /** {@inheritDoc} */
   @Override
@@ -49,13 +37,17 @@ public class IgniteSqlClient extends AbstractSqlClient {
     super.init();
 
     SQL_INIT_COUNT.incrementAndGet();
+
+    readStatement = node.sql().createStatement(readPreparedStatementString);
+
+    insertStatement = node.sql().createStatement(insertPreparedStatementString);
   }
 
   /** {@inheritDoc} */
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      try (ResultSet<SqlRow> rs = node.sql().execute(null, READ_STATEMENT.get(), key)) {
+      try (ResultSet<SqlRow> rs = node.sql().execute(null, readStatement, key)) {
         if (!rs.hasNext()) {
           return Status.NOT_FOUND;
         }
@@ -106,7 +98,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
       List<String> valuesList = new ArrayList<>();
       valuesList.add(key);
       FIELDS.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
-      node.sql().execute(null, INSERT_STATEMENT.get(), (Object[]) valuesList.toArray(new String[0])).close();
+      node.sql().execute(null, insertStatement, (Object[]) valuesList.toArray(new String[0])).close();
 
       return Status.OK;
     } catch (Exception e) {
@@ -146,12 +138,12 @@ public class IgniteSqlClient extends AbstractSqlClient {
 
       if (currInitCount <= 0) {
         try {
-          if (READ_STATEMENT.get() != null) {
-            READ_STATEMENT.get().close();
+          if (readStatement != null) {
+            readStatement.close();
           }
 
-          if (INSERT_STATEMENT.get() != null) {
-            INSERT_STATEMENT.get().close();
+          if (insertStatement != null) {
+            insertStatement.close();
           }
         } catch (Exception e) {
           throw new DBException(e);

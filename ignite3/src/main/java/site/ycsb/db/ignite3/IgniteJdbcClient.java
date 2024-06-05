@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,46 +28,16 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   /**
    * Use separate connection per thread since sharing a single Connection object is not recommended.
    */
-  private static final ThreadLocal<Connection> CONN = new ThreadLocal<>();
+  private Connection connection;
 
   /** Prepared statement for reading values. */
-  private static final ThreadLocal<PreparedStatement> READ_PREPARED_STATEMENT = ThreadLocal
-      .withInitial(IgniteJdbcClient::buildReadStatement);
+  private PreparedStatement readPreparedStatement;
 
   /** Prepared statement for inserting values. */
-  private static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = ThreadLocal
-      .withInitial(IgniteJdbcClient::buildInsertStatement);
+  private PreparedStatement insertPreparedStatement;
 
   /** Prepared statement for deleting values. */
-  private static final ThreadLocal<PreparedStatement> DELETE_PREPARED_STATEMENT = ThreadLocal
-      .withInitial(IgniteJdbcClient::buildDeleteStatement);
-
-  /** Build prepared statement for reading values. */
-  private static PreparedStatement buildReadStatement() {
-    try {
-      return CONN.get().prepareStatement(readPreparedStatementString);
-    } catch (SQLException e) {
-      throw new RuntimeException("Unable to prepare statement for SQL: " + readPreparedStatementString, e);
-    }
-  }
-
-  /** Build prepared statement for inserting values. */
-  private static PreparedStatement buildInsertStatement() {
-    try {
-      return CONN.get().prepareStatement(insertPreparedStatementString);
-    } catch (SQLException e) {
-      throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
-    }
-  }
-
-  /** Build prepared statement for deleting values. */
-  private static PreparedStatement buildDeleteStatement() {
-    try {
-      return CONN.get().prepareStatement(deletePreparedStatementString);
-    } catch (SQLException e) {
-      throw new RuntimeException("Unable to prepare statement for SQL: " + deletePreparedStatementString, e);
-    }
-  }
+  private PreparedStatement deletePreparedStatement;
 
   /** {@inheritDoc} */
   @Override
@@ -87,7 +56,11 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
     String url = "jdbc:ignite:thin://" + hostsStr;
     try {
-      CONN.set(DriverManager.getConnection(url));
+      connection = DriverManager.getConnection(url);
+
+      readPreparedStatement = connection.prepareStatement(readPreparedStatementString);
+      insertPreparedStatement = connection.prepareStatement(insertPreparedStatementString);
+      deletePreparedStatement = connection.prepareStatement(deletePreparedStatementString);
     } catch (Exception e) {
       throw new DBException(e);
     }
@@ -97,11 +70,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      PreparedStatement stmt = READ_PREPARED_STATEMENT.get();
+      readPreparedStatement.setString(1, key);
 
-      stmt.setString(1, key);
-
-      try (ResultSet rs = stmt.executeQuery()) {
+      try (ResultSet rs = readPreparedStatement.executeQuery()) {
         if (!rs.next()) {
           return Status.NOT_FOUND;
         }
@@ -133,7 +104,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
-      try (Statement stmt = CONN.get().createStatement()) {
+      try (Statement stmt = connection.createStatement()) {
         List<String> updateValuesList = new ArrayList<>();
 
         for (Entry<String, ByteIterator> entry : values.entrySet()) {
@@ -158,11 +129,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      PreparedStatement stmt = INSERT_PREPARED_STATEMENT.get();
+      setStatementValues(insertPreparedStatement, key, values);
 
-      setStatementValues(stmt, key, values);
-
-      stmt.executeUpdate();
+      insertPreparedStatement.executeUpdate();
 
       return Status.OK;
     } catch (Exception e) {
@@ -176,11 +145,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      PreparedStatement stmt = DELETE_PREPARED_STATEMENT.get();
+      deletePreparedStatement.setString(1, key);
 
-      stmt.setString(1, key);
-
-      stmt.executeUpdate();
+      deletePreparedStatement.executeUpdate();
 
       return Status.OK;
     } catch (Exception e) {
@@ -193,21 +160,19 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
-    Connection conn0 = CONN.get();
     try {
-      if (conn0 != null && !conn0.isClosed()) {
-        if (!READ_PREPARED_STATEMENT.get().isClosed()) {
-          READ_PREPARED_STATEMENT.get().close();
+      if (connection != null && !connection.isClosed()) {
+        if (!readPreparedStatement.isClosed()) {
+          readPreparedStatement.close();
         }
-        if (!INSERT_PREPARED_STATEMENT.get().isClosed()) {
-          INSERT_PREPARED_STATEMENT.get().close();
+        if (!insertPreparedStatement.isClosed()) {
+          insertPreparedStatement.close();
         }
-        if (!DELETE_PREPARED_STATEMENT.get().isClosed()) {
-          DELETE_PREPARED_STATEMENT.get().close();
+        if (!deletePreparedStatement.isClosed()) {
+          deletePreparedStatement.close();
         }
 
-        conn0.close();
-        CONN.remove();
+        connection.close();
       }
     } catch (Exception e) {
       throw new DBException(e);

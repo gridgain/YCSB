@@ -130,21 +130,20 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
-    synchronized (IgniteStreamerClient.class) {
-      int curInitCount = INIT_COUNT.decrementAndGet();
+    try {
+      synchronized (IgniteStreamerClient.class) {
+        int curInitCount = INIT_COUNT.decrementAndGet();
 
-      if (curInitCount <= 0) {
-        try {
+        if (curInitCount <= 0) {
           rvPublisher.close();
-
           rvStreamerFut.join();
-
-          node.close();
-          node = null;
-        } catch (Exception e) {
-          throw new DBException(e);
         }
       }
+
+      node.close();
+      node = null;
+    } catch (Exception e) {
+      throw new DBException(e);
     }
   }
 }

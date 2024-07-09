@@ -103,6 +103,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   private static volatile boolean initCompleted = false;
 
+  private static volatile boolean externalIgnite = false;
+
   /**
    * Used to print more information into logs for debugging purposes.
    */
@@ -150,6 +152,7 @@ public abstract class IgniteAbstractClient extends DB {
   public static void setIgniteServer(IgniteServer igniteSrv) {
     igniteServer = igniteSrv;
     ignite = igniteServer.api();
+    externalIgnite = true;
   }
 
   /** {@inheritDoc} */
@@ -425,7 +428,7 @@ public abstract class IgniteAbstractClient extends DB {
             igniteClient.close();
           }
 
-          if (igniteServer != null) {
+          if (igniteServer != null && !externalIgnite) {
             igniteServer.shutdown();
           }
 

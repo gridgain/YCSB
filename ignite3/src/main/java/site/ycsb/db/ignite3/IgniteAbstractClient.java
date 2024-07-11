@@ -167,14 +167,16 @@ public abstract class IgniteAbstractClient extends DB {
 
       initProperties(getProperties());
 
-      initIgniteClientNode(useEmbeddedIgnite);
+      initIgnite(useEmbeddedIgnite);
+
+      createTestTable(ignite);
 
       initCompleted = true;
     }
   }
 
   /**
-   * Init properties values.
+   * Init property values.
    *
    * @param properties Properties.
    */
@@ -227,11 +229,10 @@ public abstract class IgniteAbstractClient extends DB {
   /**
    * - Start embedded Ignite node (if needed).
    * - Get Ignite client (if needed).
-   * - Create test table.
    *
    * @param isEmbedded Whether to start embedded node.
    */
-  private void initIgniteClientNode(boolean isEmbedded) throws DBException {
+  private void initIgnite(boolean isEmbedded) throws DBException {
     //skip if 'ignite' was set with 'setIgniteServer'
     if (ignite == null) {
       if (isEmbedded) {
@@ -241,15 +242,6 @@ public abstract class IgniteAbstractClient extends DB {
         igniteClient = IgniteClient.builder().addresses(hosts.split(",")).build();
         ignite = igniteClient;
       }
-    }
-
-    createTestTable(ignite);
-
-    kvView = ignite.tables().table(cacheName).keyValueView();
-    rView = ignite.tables().table(cacheName).recordView();
-
-    if (kvView == null) {
-      throw new DBException("Failed to find cache: " + cacheName);
     }
   }
 
@@ -323,6 +315,9 @@ public abstract class IgniteAbstractClient extends DB {
       if (!cachePresent) {
         throw new DBException("Table wasn't created in " + TABLE_CREATION_TIMEOUT_SECONDS + " seconds.");
       }
+
+      kvView = ignite.tables().table(cacheName).keyValueView();
+      rView = ignite.tables().table(cacheName).recordView();
     } catch (Exception e) {
       throw new DBException(e);
     }

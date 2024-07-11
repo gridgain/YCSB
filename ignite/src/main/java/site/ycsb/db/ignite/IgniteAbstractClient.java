@@ -266,7 +266,7 @@ public abstract class IgniteAbstractClient extends DB {
     synchronized (INIT_COUNT) {
       final int curInitCount = INIT_COUNT.decrementAndGet();
 
-      if (curInitCount <= 0 || !externalIgnite) {
+      if (curInitCount <= 0 && !externalIgnite) {
         ignite.close();
         ignite = null;
       }

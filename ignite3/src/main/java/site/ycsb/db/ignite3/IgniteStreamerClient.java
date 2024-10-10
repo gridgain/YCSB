@@ -54,7 +54,7 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   protected CompletableFuture<Void> rvStreamerFut;
 
   /** Thread id. */
-  long threadId;
+  protected long threadId;
 
   /** {@inheritDoc} */
   @Override

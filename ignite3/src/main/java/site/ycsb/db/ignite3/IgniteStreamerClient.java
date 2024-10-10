@@ -53,12 +53,17 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   /** Record view data streamer completable future. */
   protected CompletableFuture<Void> rvStreamerFut;
 
+  /** Thread id. */
+  long threadId;
+
   /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
     super.init();
 
     INIT_COUNT.incrementAndGet();
+
+    threadId = Thread.currentThread().getId();
 
     synchronized (IgniteStreamerClient.class) {
       if (rvPublisher != null) {
@@ -86,7 +91,11 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
     try {
       for (int i = 0; i < keys.size(); i++) {
         Tuple value = Tuple.create(fieldCount + 1);
-        value.set(PRIMARY_COLUMN_NAME, keys.get(i));
+        //start debug
+        String key = keys.get(i);
+        LOG.info(String.format("[%s] key=%s", threadId, key));
+        //end debug
+        value.set(PRIMARY_COLUMN_NAME, key);
         values.get(i).forEach((k, v) -> value.set(k, v.toString()));
 
         rvPublisher.submit(DataStreamerItem.of(value));

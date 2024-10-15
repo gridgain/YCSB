@@ -363,8 +363,12 @@ public abstract class IgniteAbstractClient extends DB {
       return "";
     }
 
-    storageProfile = storageProfile.isEmpty() ? DEFAULT_STORAGE_PROFILE_NAME : storageProfile;
-    secondaryStorageProfile = secondaryStorageProfile.isEmpty() ? DEFAULT_COLUMNAR_PROFILE_NAME : secondaryStorageProfile;
+    storageProfile = storageProfile.isEmpty() ?
+        DEFAULT_STORAGE_PROFILE_NAME :
+        storageProfile;
+    secondaryStorageProfile = secondaryStorageProfile.isEmpty() ?
+        DEFAULT_COLUMNAR_PROFILE_NAME :
+        secondaryStorageProfile;
 
     String storageProfiles = useColumnar ?
         storageProfile :

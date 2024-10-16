@@ -75,19 +75,9 @@ LICENSE file.
       <url>https://www.gridgainsystems.com/nexus/content/repositories/gridgain-snapshots</url>
     </repository>
     <repository>
-      <id>gridgain-private</id>
-      <name>GridGain Private Maven Repository</name>
-      <url>https://www.gridgainsystems.com/nexus/content/repositories/gridgain-private/</url>
-    </repository>
-    <repository>
       <id>gridgain-external-repository</id>
       <name>GridGain external</name>
       <url>https://www.gridgainsystems.com/nexus/content/repositories/external</url>
-    </repository>
-    <repository>
-      <id>gridgain_ea</id>
-      <name>GridGain 9 Early Access release repository</name>
-      <url>https://www.gridgainsystems.com/nexus/content/repositories/external-ea</url>
     </repository>
   </repositories>
 

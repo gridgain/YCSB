@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -101,7 +102,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
       stmt.setString(1, key);
 
-      try (ResultSet rs = stmt.executeQuery()) {
+      try (ResultSet rs = wrapWithTx(() -> stmt.executeQuery())) {
         if (!rs.next()) {
           return Status.NOT_FOUND;
         }
@@ -143,7 +144,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
         String sql = String.format("UPDATE %s SET %s WHERE %s = '%s'",
             cacheName, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
 
-        stmt.executeUpdate(sql);
+        wrapWithTx(() -> stmt.executeUpdate(sql));
       }
 
       return Status.OK;
@@ -162,7 +163,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
       setStatementValues(stmt, key, values);
 
-      stmt.executeUpdate();
+      wrapWithTx(() -> stmt.executeUpdate());
 
       return Status.OK;
     } catch (Exception e) {
@@ -180,7 +181,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
       stmt.setString(1, key);
 
-      stmt.executeUpdate();
+      wrapWithTx(() -> stmt.executeUpdate());
 
       return Status.OK;
     } catch (Exception e) {
@@ -194,14 +195,19 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   @Override
   public void cleanup() throws DBException {
     Connection conn0 = CONN.get();
+
     try {
       if (conn0 != null && !conn0.isClosed()) {
+        conn0.setAutoCommit(true);
+
         if (!READ_PREPARED_STATEMENT.get().isClosed()) {
           READ_PREPARED_STATEMENT.get().close();
         }
+
         if (!INSERT_PREPARED_STATEMENT.get().isClosed()) {
           INSERT_PREPARED_STATEMENT.get().close();
         }
+
         if (!DELETE_PREPARED_STATEMENT.get().isClosed()) {
           DELETE_PREPARED_STATEMENT.get().close();
         }
@@ -214,5 +220,60 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     }
 
     super.cleanup();
+  }
+
+  /**
+   * if parameter 'txops' > 0
+   * than turn off auto commit until we accumulate required quantity of operations,
+   * else leave default auto commit value (true)
+   *
+   * @param operation Operation.
+   */
+  @Override
+  protected void wrapWithTx(Runnable operation) throws Exception {
+    if (!isWrapOpsToTx) {
+      operation.run();
+    } else {
+      if (CONN.get().getAutoCommit()) {
+        CONN.get().setAutoCommit(false);
+      }
+
+      operation.run();
+      currOpsInTx++;
+
+      if (currOpsInTx >= txOps) {
+        CONN.get().setAutoCommit(true);
+        currOpsInTx = 0;
+      }
+    }
+  }
+
+  /**
+   * if parameter 'txops' > 0
+   * than turn off auto commit until we accumulate required quantity of operations,
+   * else leave default auto commit value (true)
+   *
+   * @param operation Operation that produces a result.
+   * @return operation call result.
+   */
+  @Override
+  protected <R> R wrapWithTx(Callable<R> operation) throws Exception {
+    if (!isWrapOpsToTx) {
+      return operation.call();
+    } else {
+      if (CONN.get().getAutoCommit()) {
+        CONN.get().setAutoCommit(false);
+      }
+
+      R result = operation.call();
+      currOpsInTx++;
+
+      if (currOpsInTx >= txOps) {
+        CONN.get().setAutoCommit(true);
+        currOpsInTx = 0;
+      }
+
+      return result;
+    }
   }
 }

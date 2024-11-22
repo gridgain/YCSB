@@ -463,7 +463,7 @@ public abstract class IgniteAbstractClient extends DB {
    *
    * @param operation Operation.
    */
-  protected void wrapWithTx(Runnable operation) {
+  protected void wrapWithTx(Runnable operation) throws Exception {
     if (!isWrapOpsToTx) {
       operation.run();
     } else {

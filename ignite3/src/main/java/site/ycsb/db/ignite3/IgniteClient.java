@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.tx.TransactionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -46,9 +47,13 @@ public class IgniteClient extends IgniteAbstractClient {
       Tuple tValue = Tuple.create(fieldCount);
       values.forEach((field, value) -> tValue.set(field, value.toString()));
 
-      kvView.put(null, tKey, tValue);
+      wrapWithTx(() -> kvView.put(tx, tKey, tValue));
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error inserting key: %s", key), e);
 
@@ -71,9 +76,13 @@ public class IgniteClient extends IgniteAbstractClient {
         tBatch.put(tKey, tValues);
       }
 
-      kvView.putAll(null, tBatch);
+      wrapWithTx(() -> kvView.putAll(tx, tBatch));
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error("Error inserting batch of keys.", e);
 
@@ -87,7 +96,7 @@ public class IgniteClient extends IgniteAbstractClient {
                      Map<String, ByteIterator> result) {
     try {
       Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-      Tuple tValue = kvView.get(null, tKey);
+      Tuple tValue = wrapWithTx(() -> kvView.get(tx, tKey));
 
       if (tValue == null) {
         return Status.NOT_FOUND;
@@ -108,6 +117,10 @@ public class IgniteClient extends IgniteAbstractClient {
       }
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -123,7 +136,7 @@ public class IgniteClient extends IgniteAbstractClient {
       List<Tuple> tKeys = new ArrayList<>();
       keys.forEach(k -> tKeys.add(Tuple.create(1).set(PRIMARY_COLUMN_NAME, k)));
 
-      Map<Tuple, Tuple> tResults = kvView.getAll(null, tKeys);
+      Map<Tuple, Tuple> tResults = wrapWithTx(() -> kvView.getAll(tx, tKeys));
 
       final Tuple tKey = Tuple.create(1);
 
@@ -160,6 +173,10 @@ public class IgniteClient extends IgniteAbstractClient {
       }
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error("Error reading batch of keys.", e);
 
@@ -177,9 +194,13 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      kvView.remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+      wrapWithTx(() -> kvView.remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key)));
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error deleting key: %s ", key), e);
     }

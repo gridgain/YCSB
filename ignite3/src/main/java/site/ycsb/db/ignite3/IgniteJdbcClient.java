@@ -223,9 +223,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   }
 
   /**
-   * if parameter 'txops' > 0
-   * than turn off auto commit until we accumulate required quantity of operations,
-   * else leave default auto commit value (true)
+   * If parameter 'txops' > 0,
+   * then turn off auto commit until we accumulate required quantity of operations,
+   * else leave default auto commit value (true).
    *
    * @param operation Operation.
    */
@@ -249,9 +249,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   }
 
   /**
-   * if parameter 'txops' > 0
-   * than turn off auto commit until we accumulate required quantity of operations,
-   * else leave default auto commit value (true)
+   * If parameter 'txops' > 0,
+   * then turn off auto commit until we accumulate required quantity of operations,
+   * else leave default auto commit value (true).
    *
    * @param operation Operation that produces a result.
    * @return operation call result.

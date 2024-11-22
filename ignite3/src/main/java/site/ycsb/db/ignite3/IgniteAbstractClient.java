@@ -456,8 +456,8 @@ public abstract class IgniteAbstractClient extends DB {
   }
 
   /**
-   * if parameter 'txops' > 0
-   * than perform the operation in transaction
+   * If parameter 'txops' > 0,
+   * then perform the operation in transaction
    *      (automatically begin transaction and commit it after 'txops' operations performed),
    * else perform the operation without transaction.
    *
@@ -477,8 +477,8 @@ public abstract class IgniteAbstractClient extends DB {
   }
 
   /**
-   * if parameter 'txops' > 0
-   * than perform the operation in transaction
+   * If parameter 'txops' > 0,
+   * then perform the operation in transaction
    *      (automatically begin transaction and commit it after 'txops' operations performed),
    * else perform the operation without transaction.
    *

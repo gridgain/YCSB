@@ -102,7 +102,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
       stmt.setString(1, key);
 
-      try (ResultSet rs = wrapWithTx(() -> stmt.executeQuery())) {
+      try (ResultSet rs = wrapWithTx(stmt::executeQuery)) {
         if (!rs.next()) {
           return Status.NOT_FOUND;
         }
@@ -163,7 +163,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
       setStatementValues(stmt, key, values);
 
-      wrapWithTx(() -> stmt.executeUpdate());
+      wrapWithTx(stmt::executeUpdate);
 
       return Status.OK;
     } catch (Exception e) {
@@ -181,7 +181,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
       stmt.setString(1, key);
 
-      wrapWithTx(() -> stmt.executeUpdate());
+      wrapWithTx(stmt::executeUpdate);
 
       return Status.OK;
     } catch (Exception e) {
@@ -220,32 +220,6 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     }
 
     super.cleanup();
-  }
-
-  /**
-   * If parameter 'txops' > 0,
-   * then turn off auto commit until we accumulate required quantity of operations,
-   * else leave default auto commit value (true).
-   *
-   * @param operation Operation.
-   */
-  @Override
-  protected void wrapWithTx(Runnable operation) throws Exception {
-    if (!isWrapOpsToTx) {
-      operation.run();
-    } else {
-      if (CONN.get().getAutoCommit()) {
-        CONN.get().setAutoCommit(false);
-      }
-
-      operation.run();
-      currOpsInTx++;
-
-      if (currOpsInTx >= txOps) {
-        CONN.get().setAutoCommit(true);
-        currOpsInTx = 0;
-      }
-    }
   }
 
   /**

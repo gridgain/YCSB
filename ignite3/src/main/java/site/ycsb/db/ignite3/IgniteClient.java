@@ -47,7 +47,10 @@ public class IgniteClient extends IgniteAbstractClient {
       Tuple tValue = Tuple.create(fieldCount);
       values.forEach((field, value) -> tValue.set(field, value.toString()));
 
-      wrapWithTx(() -> kvView.put(tx, tKey, tValue));
+      wrapWithTx(() -> {
+        kvView.put(tx, tKey, tValue);
+        return null;
+      });
 
       return Status.OK;
     } catch (TransactionException txEx) {
@@ -76,7 +79,10 @@ public class IgniteClient extends IgniteAbstractClient {
         tBatch.put(tKey, tValues);
       }
 
-      wrapWithTx(() -> kvView.putAll(tx, tBatch));
+      wrapWithTx(() -> {
+        kvView.putAll(tx, tBatch);
+        return null;
+      });
 
       return Status.OK;
     } catch (TransactionException txEx) {

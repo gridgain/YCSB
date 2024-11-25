@@ -112,8 +112,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
       valuesList.add(key);
       valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
 
-      wrapWithTx(() -> ignite.sql()
-          .execute(tx, INSERT_STATEMENT.get(), (Object[]) valuesList.toArray(new String[0])).close());
+      wrapWithTx(() -> {
+        ignite.sql().execute(tx, INSERT_STATEMENT.get(), (Object[]) valuesList.toArray(new String[0])).close();
+        return null;
+      });
 
       return Status.OK;
     } catch (TransactionException txEx) {
@@ -139,7 +141,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
         LOG.info(deleteStatement);
       }
 
-      wrapWithTx(() -> ignite.sql().execute(tx, deleteStatement).close());
+      wrapWithTx(() -> {
+        ignite.sql().execute(tx, deleteStatement).close();
+        return null;
+      });
 
       return Status.OK;
     } catch (TransactionException txEx) {

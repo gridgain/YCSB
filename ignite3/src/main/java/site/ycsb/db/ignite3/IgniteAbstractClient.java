@@ -461,27 +461,6 @@ public abstract class IgniteAbstractClient extends DB {
    *      (automatically begin transaction and commit it after 'txops' operations performed),
    * else perform the operation without transaction.
    *
-   * @param operation Operation.
-   */
-  protected void wrapWithTx(Runnable operation) throws Exception {
-    if (!isWrapOpsToTx) {
-      operation.run();
-    } else {
-      checkBeginTx();
-
-      operation.run();
-      currOpsInTx++;
-
-      checkEndTx();
-    }
-  }
-
-  /**
-   * If parameter 'txops' > 0,
-   * then perform the operation in transaction
-   *      (automatically begin transaction and commit it after 'txops' operations performed),
-   * else perform the operation without transaction.
-   *
    * @param operation Operation that produces a result.
    * @return operation call result.
    */

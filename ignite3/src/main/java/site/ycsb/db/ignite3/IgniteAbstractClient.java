@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
@@ -44,6 +45,8 @@ import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.tx.Transaction;
+import org.apache.ignite.tx.TransactionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -80,6 +83,14 @@ public abstract class IgniteAbstractClient extends DB {
   protected long recordsCount;
 
   protected long batchSize;
+
+  protected int txOps;
+
+  protected Transaction tx = null;
+
+  protected boolean isWrapOpsToTx;
+
+  protected int currOpsInTx = 0;
 
   protected final List<String> valueFields = new ArrayList<>();
 
@@ -234,6 +245,9 @@ public abstract class IgniteAbstractClient extends DB {
           Client.DEFAULT_RECORD_COUNT));
       batchSize = parseLongWithModifiers(properties.getProperty(Client.BATCH_SIZE_PROPERTY,
           Client.DEFAULT_BATCH_SIZE));
+      txOps = Integer.parseInt(properties.getProperty(Client.TX_OPS_PROPERTY,
+          Client.DEFAULT_TX_OPS));
+      isWrapOpsToTx = txOps > 0;
 
       for (int i = 0; i < fieldCount; i++) {
         valueFields.add(fieldPrefix + i);
@@ -335,6 +349,11 @@ public abstract class IgniteAbstractClient extends DB {
     }
   }
 
+  /**
+   * Prepare the creation table SQL line.
+   *
+   * @param createZoneReq Create zone request (empty if no zone creation needed).
+   */
   public String createTableSQL(String createZoneReq) {
     String fieldsSpecs = valueFields.stream()
         .map(e -> e + " VARCHAR")
@@ -393,6 +412,71 @@ public abstract class IgniteAbstractClient extends DB {
     LOG.info("Create zone request: {}", createZoneReq);
 
     return createZoneReq;
+  }
+
+  /**
+   * Check if we have an opened transaction and begin a new one if not.
+   */
+  protected void checkBeginTx() {
+    if (tx == null) {
+      tx = ignite.transactions().begin();
+    }
+  }
+
+  /**
+   * Check whether the required number of operations has accumulated in the current transaction,
+   * and if so, commit this transaction.
+   */
+  protected void checkEndTx() throws TransactionException {
+    if (currOpsInTx >= txOps) {
+      commitTx();
+    }
+  }
+
+  /**
+   * Do commit current transaction.
+   */
+  protected void commitTx() throws TransactionException {
+    if (tx != null) {
+      tx.commit();
+      tx = null;
+      currOpsInTx = 0;
+    }
+  }
+
+  /**
+   * Do rollback current transaction.
+   */
+  protected void rollbackTx() throws TransactionException {
+    if (tx != null) {
+      tx.rollback();
+      tx = null;
+      currOpsInTx = 0;
+    }
+  }
+
+  /**
+   * If parameter 'txops' > 0,
+   * then perform the operation in transaction
+   *      (automatically begin transaction and commit it after 'txops' operations performed),
+   * else perform the operation without transaction.
+   *
+   * @param operation Operation that produces a result.
+   * @return operation call result.
+   */
+  protected <R> R wrapWithTx(Callable<R> operation) throws Exception {
+    if (!isWrapOpsToTx) {
+      return operation.call();
+    } else {
+      checkBeginTx();
+
+      R result = operation.call();
+      currOpsInTx++;
+
+      checkEndTx();
+
+      return result;
+    }
   }
 
   /**
@@ -458,6 +542,8 @@ public abstract class IgniteAbstractClient extends DB {
   /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
+    commitTx();
+
     synchronized (IgniteAbstractClient.class) {
       int curInitCount = INIT_COUNT.decrementAndGet();
 

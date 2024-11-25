@@ -93,6 +93,13 @@ public final class Client {
   public static final String DEFAULT_BATCH_SIZE = "1";
 
   /**
+   * Default number of operations to wrap with transaction.
+   * 0 - don't wrap operations with transactions.
+   * 1+ - number of operations that will be wrapped within one transaction.
+   */
+  public static final String DEFAULT_TX_OPS = "0";
+
+  /**
    * The target number of operations to perform.
    */
   public static final String OPERATION_COUNT_PROPERTY = "operationcount";
@@ -111,6 +118,11 @@ public final class Client {
    * The number of records for batch operations.
    */
   public static final String BATCH_SIZE_PROPERTY = "batchsize";
+
+  /**
+   * The number of operations to wrap with transaction.
+   */
+  public static final String TX_OPS_PROPERTY = "txops";
 
   /**
    * The workload class to be loaded.

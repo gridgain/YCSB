@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.Cursor;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.tx.TransactionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -42,7 +43,8 @@ public class IgniteCriteriaClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
-    try (Cursor<Entry<Tuple, Tuple>> cursor = kvView.query(null, columnValue(PRIMARY_COLUMN_NAME, equalTo(key)))) {
+    try (Cursor<Entry<Tuple, Tuple>> cursor = wrapWithTx(
+        () -> kvView.query(tx, columnValue(PRIMARY_COLUMN_NAME, equalTo(key))))) {
       if (!cursor.hasNext()) {
         return Status.NOT_FOUND;
       }
@@ -73,6 +75,10 @@ public class IgniteCriteriaClient extends IgniteAbstractClient {
       }
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 

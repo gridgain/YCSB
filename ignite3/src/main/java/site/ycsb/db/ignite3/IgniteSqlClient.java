@@ -8,6 +8,7 @@ import java.util.Set;
 import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.sql.Statement;
+import org.apache.ignite.tx.TransactionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -43,7 +44,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      try (ResultSet<SqlRow> rs = ignite.sql().execute(null, READ_STATEMENT.get(), key)) {
+      try (ResultSet<SqlRow> rs = wrapWithTx(() -> ignite.sql().execute(tx, READ_STATEMENT.get(), key))) {
         if (!rs.hasNext()) {
           return Status.NOT_FOUND;
         }
@@ -72,6 +73,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
         LOG.info("table: {}, key: {}, fields: {}", table, key, fields);
         LOG.info("result: {}", result);
       }
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -94,9 +99,17 @@ public class IgniteSqlClient extends AbstractSqlClient {
       List<String> valuesList = new ArrayList<>();
       valuesList.add(key);
       valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
-      ignite.sql().execute(null, INSERT_STATEMENT.get(), (Object[]) valuesList.toArray(new String[0])).close();
+
+      wrapWithTx(() -> {
+        ignite.sql().execute(tx, INSERT_STATEMENT.get(), (Object[]) valuesList.toArray(new String[0])).close();
+        return null;
+      });
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error inserting key: %s", key), e);
 
@@ -116,9 +129,16 @@ public class IgniteSqlClient extends AbstractSqlClient {
         LOG.info(deleteStatement);
       }
 
-      ignite.sql().execute(null, deleteStatement).close();
+      wrapWithTx(() -> {
+        ignite.sql().execute(tx, deleteStatement).close();
+        return null;
+      });
 
       return Status.OK;
+    } catch (TransactionException txEx) {
+      rollbackTx();
+
+      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error deleting key: %s ", key), e);
     }

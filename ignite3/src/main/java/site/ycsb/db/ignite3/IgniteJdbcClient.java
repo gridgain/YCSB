@@ -89,6 +89,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     String url = "jdbc:ignite:thin://" + hostsStr;
     try {
       CONN.set(DriverManager.getConnection(url));
+      CONN.get().setAutoCommit(!isWrapOpsToTx);
     } catch (Exception e) {
       throw new DBException(e);
     }
@@ -235,19 +236,21 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     if (!isWrapOpsToTx) {
       return operation.call();
     } else {
-      if (CONN.get().getAutoCommit()) {
-        CONN.get().setAutoCommit(false);
+      try {
+        R result = operation.call();
+        currOpsInTx++;
+
+        if (currOpsInTx >= txOps) {
+          CONN.get().commit();
+          currOpsInTx = 0;
+        }
+
+        return result;
+      } catch (SQLException e) {
+        CONN.get().rollback();
+
+        throw e;
       }
-
-      R result = operation.call();
-      currOpsInTx++;
-
-      if (currOpsInTx >= txOps) {
-        CONN.get().setAutoCommit(true);
-        currOpsInTx = 0;
-      }
-
-      return result;
     }
   }
 }

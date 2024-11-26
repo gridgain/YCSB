@@ -200,7 +200,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      wrapWithTx(() -> kvView.remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key)));
+      wrapWithTx(() -> kvView.remove(tx, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key)));
 
       return Status.OK;
     } catch (TransactionException txEx) {

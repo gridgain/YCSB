@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.tx.TransactionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -53,10 +52,6 @@ public class IgniteClient extends IgniteAbstractClient {
         });
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error inserting key: %s", key), e);
 
@@ -85,10 +80,6 @@ public class IgniteClient extends IgniteAbstractClient {
         });
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error("Error inserting batch of keys.", e);
 
@@ -123,10 +114,6 @@ public class IgniteClient extends IgniteAbstractClient {
       }
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -179,10 +166,6 @@ public class IgniteClient extends IgniteAbstractClient {
       }
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error("Error reading batch of keys.", e);
 
@@ -203,10 +186,6 @@ public class IgniteClient extends IgniteAbstractClient {
       wrapWithTx(() -> kvView.remove(tx, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key)));
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error deleting key: %s ", key), e);
     }

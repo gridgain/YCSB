@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.sql.Statement;
-import org.apache.ignite.tx.TransactionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -85,10 +84,6 @@ public class IgniteSqlClient extends AbstractSqlClient {
         LOG.info("table: {}, key: {}, fields: {}", table, key, fields);
         LOG.info("result: {}", result);
       }
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -118,10 +113,6 @@ public class IgniteSqlClient extends AbstractSqlClient {
         });
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error inserting key: %s", key), e);
 
@@ -147,10 +138,6 @@ public class IgniteSqlClient extends AbstractSqlClient {
         });
 
       return Status.OK;
-    } catch (TransactionException txEx) {
-      rollbackTx();
-
-      throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error deleting key: %s ", key), e);
     }

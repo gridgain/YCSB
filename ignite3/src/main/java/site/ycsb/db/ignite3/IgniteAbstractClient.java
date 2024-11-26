@@ -468,14 +468,20 @@ public abstract class IgniteAbstractClient extends DB {
     if (!isWrapOpsToTx) {
       return operation.call();
     } else {
-      checkBeginTx();
+      try {
+        checkBeginTx();
 
-      R result = operation.call();
-      currOpsInTx++;
+        R result = operation.call();
+        currOpsInTx++;
 
-      checkEndTx();
+        checkEndTx();
 
-      return result;
+        return result;
+      } catch (TransactionException txEx) {
+        rollbackTx();
+
+        throw txEx;
+      }
     }
   }
 

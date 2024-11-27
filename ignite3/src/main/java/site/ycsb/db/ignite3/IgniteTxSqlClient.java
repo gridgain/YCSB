@@ -160,8 +160,8 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error deleting key: %s ", key), e);
-    }
 
-    return Status.ERROR;
+      return Status.ERROR;
+    }
   }
 }

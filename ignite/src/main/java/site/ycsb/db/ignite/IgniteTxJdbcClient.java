@@ -16,6 +16,7 @@
  */
 package site.ycsb.db.ignite;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,22 @@ public class IgniteTxJdbcClient extends IgniteJdbcClient {
 
     try {
       CONN.get().setAutoCommit(false);
+
+      int isolationLevel;
+
+      switch (txIsolation) {
+        case READ_COMMITTED:
+          isolationLevel = Connection.TRANSACTION_READ_COMMITTED;
+          break;
+        case REPEATABLE_READ:
+          isolationLevel = Connection.TRANSACTION_REPEATABLE_READ;
+          break;
+        case SERIALIZABLE:
+        default:
+          isolationLevel = Connection.TRANSACTION_SERIALIZABLE;
+      }
+
+      CONN.get().setTransactionIsolation(isolationLevel);
     } catch (Exception e) {
       throw new DBException(e);
     }

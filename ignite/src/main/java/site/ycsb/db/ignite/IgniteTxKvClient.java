@@ -16,16 +16,12 @@
  */
 package site.ycsb.db.ignite;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.transactions.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -41,9 +37,6 @@ public class IgniteTxKvClient extends IgniteClient {
 
   /** */
   protected static final Logger LOG = LogManager.getLogger(IgniteTxKvClient.class);
-
-  /** Transaction. */
-  private Transaction tx;
 
   /** {@inheritDoc} */
   @Override
@@ -212,12 +205,5 @@ public class IgniteTxKvClient extends IgniteClient {
     } finally {
       tx.close();
     }
-  }
-
-  /**
-   * Start transaction.
-   */
-  private void txStart() {
-    tx = ignite.transactions().txStart(PESSIMISTIC, SERIALIZABLE);
   }
 }

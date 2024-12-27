@@ -43,7 +43,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
     try {
       Status status;
 
-      tx = ignite.transactions().begin();
+      tx = ignite.transactions().begin(txOptions);
 
       status = get(tx, table, key, fields, result);
 
@@ -67,7 +67,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
   public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
                           List<Map<String, ByteIterator>> results) {
     try {
-      tx = ignite.transactions().begin();
+      tx = ignite.transactions().begin(txOptions);
 
       for (int i = 0; i < keys.size(); i++) {
         HashMap<String, ByteIterator> result = new HashMap<>();
@@ -106,7 +106,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      tx = ignite.transactions().begin();
+      tx = ignite.transactions().begin(txOptions);
 
       put(tx, key, values);
 
@@ -129,7 +129,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
   @Override
   public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
     try {
-      tx = ignite.transactions().begin();
+      tx = ignite.transactions().begin(txOptions);
 
       for (int i = 0; i < keys.size(); i++) {
         put(tx, keys.get(i), values.get(i));
@@ -162,7 +162,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
         LOG.info(deleteStatement);
       }
 
-      tx = ignite.transactions().begin();
+      tx = ignite.transactions().begin(txOptions);
 
       ignite.sql().execute(tx, deleteStatement).close();
 

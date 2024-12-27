@@ -124,7 +124,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
         Status status = get(tx, keys.get(i), fields.get(i), result);
 
-        if (status != Status.OK) {
+        if (!status.isOk()) {
           throw new TransactionException(-1, String.format("Unable to read key %s", keys.get(i)));
         }
 
@@ -164,8 +164,8 @@ public class IgniteTxKvClient extends IgniteClient {
       throw txEx;
     } catch (Exception e) {
       LOG.error(String.format("Error deleting key: %s ", key), e);
-    }
 
-    return Status.ERROR;
+      return Status.ERROR;
+    }
   }
 }

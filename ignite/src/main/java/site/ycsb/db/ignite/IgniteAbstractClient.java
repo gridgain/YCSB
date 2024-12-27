@@ -61,7 +61,7 @@ import site.ycsb.workloads.CoreWorkload;
  */
 public abstract class IgniteAbstractClient extends DB {
   /** */
-  protected static Logger log = LogManager.getLogger(IgniteAbstractClient.class);
+  protected static final Logger LOG = LogManager.getLogger(IgniteAbstractClient.class);
 
   protected static final String PRIMARY_COLUMN_NAME = "ycsb_key";
   protected static final String HOSTS_PROPERTY = "hosts";
@@ -188,7 +188,7 @@ public abstract class IgniteAbstractClient extends DB {
       }
     }
 
-    log.info("Activate Ignite cluster.");
+    LOG.info("Activate Ignite cluster.");
     ignite.cluster().state(ClusterState.ACTIVE);
   }
 
@@ -233,7 +233,7 @@ public abstract class IgniteAbstractClient extends DB {
     Log4J2Logger logger = new Log4J2Logger(this.getClass().getClassLoader().getResource("log4j2.xml"));
     igcfg.setGridLogger(logger);
 
-    log.info("Start Ignite client node.");
+    LOG.info("Start Ignite client node.");
     return Ignition.start(igcfg);
   }
 
@@ -257,7 +257,7 @@ public abstract class IgniteAbstractClient extends DB {
       Files.copy(Objects.requireNonNull(cfgIs), cfgPath, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    log.info("Start embedded Ignite node.");
+    LOG.info("Start embedded Ignite node.");
     return Ignition.start(cfgPath.toString());
   }
 

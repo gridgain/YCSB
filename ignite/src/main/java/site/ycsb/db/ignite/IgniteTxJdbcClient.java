@@ -51,15 +51,15 @@ public class IgniteTxJdbcClient extends IgniteJdbcClient {
       int isolationLevel;
 
       switch (txIsolation) {
-        case READ_COMMITTED:
-          isolationLevel = Connection.TRANSACTION_READ_COMMITTED;
-          break;
-        case REPEATABLE_READ:
-          isolationLevel = Connection.TRANSACTION_REPEATABLE_READ;
-          break;
-        case SERIALIZABLE:
-        default:
-          isolationLevel = Connection.TRANSACTION_SERIALIZABLE;
+      case READ_COMMITTED:
+        isolationLevel = Connection.TRANSACTION_READ_COMMITTED;
+        break;
+      case REPEATABLE_READ:
+        isolationLevel = Connection.TRANSACTION_REPEATABLE_READ;
+        break;
+      case SERIALIZABLE:
+      default:
+        isolationLevel = Connection.TRANSACTION_SERIALIZABLE;
       }
 
       CONN.get().setTransactionIsolation(isolationLevel);

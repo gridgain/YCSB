@@ -309,10 +309,10 @@ public abstract class IgniteAbstractClient extends DB {
       LOG.info(String.format("Creating %s indexes.", indexCount));
 
       createIndexesReqs.forEach(idxReq -> {
-        LOG.info("SQL line: {}", idxReq);
+          LOG.info("SQL line: {}", idxReq);
 
-        cache.query(new SqlFieldsQuery(idxReq)).getAll();
-      });
+          cache.query(new SqlFieldsQuery(idxReq)).getAll();
+        });
     }
   }
 

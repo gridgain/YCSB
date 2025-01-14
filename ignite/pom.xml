@@ -41,7 +41,7 @@ LICENSE file.
   <repositories>
     <repository>
       <id>gridgain-external-repository</id>
-      <url>https://www.gridgainsystems.com/nexus/content/repositories/external</url>
+      <url>https://maven.gridgain.com/nexus/content/repositories/external</url>
     </repository>
   </repositories>
 

@@ -117,12 +117,12 @@ LICENSE file.
     <repository>
       <id>gridgain-snapshots</id>
       <name>GridGain snapshots</name>
-      <url>https://www.gridgainsystems.com/nexus/content/repositories/gridgain-snapshots</url>
+      <url>https://maven.gridgain.com/nexus/content/repositories/gridgain-snapshots</url>
     </repository>
     <repository>
       <id>gridgain-external-repository</id>
       <name>GridGain external</name>
-      <url>https://www.gridgainsystems.com/nexus/content/repositories/external</url>
+      <url>https://maven.gridgain.com/nexus/content/repositories/external</url>
     </repository>
   </repositories>
 

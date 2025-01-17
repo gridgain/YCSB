@@ -167,6 +167,8 @@ public abstract class IgniteAbstractClient extends DB {
       initTestCache();
 
       createIndexes();
+
+      initCompleted = true;
     }
   }
 

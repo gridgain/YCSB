@@ -16,6 +16,7 @@
  */
 package site.ycsb.db.ignite3;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.SubmissionPublisher;
 import org.apache.ignite.table.DataStreamerItem;
 import org.apache.ignite.table.DataStreamerOptions;
+import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,11 +42,11 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   /** Data streamer auto-flush interval in ms. */
   protected static final int DATA_STREAMER_AUTOFLUSH_INTERVAL = 5000;
 
-  /** Record view publisher. */
-  protected SubmissionPublisher<DataStreamerItem<Tuple>> rvPublisher;
+  /** List of record view publishers. */
+  protected List<SubmissionPublisher<DataStreamerItem<Tuple>>> rvPublishers;
 
-  /** Record view data streamer completable future. */
-  protected CompletableFuture<Void> rvStreamerFut;
+  /** List of record view data streamer completable futures. */
+  protected List<CompletableFuture<Void>> rvStreamerFutures;
 
   /** {@inheritDoc} */
   @Override
@@ -55,8 +57,15 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
         .pageSize((int) batchSize)
         .autoFlushInterval(DATA_STREAMER_AUTOFLUSH_INTERVAL)
         .build();
-    rvPublisher = new SubmissionPublisher<>();
-    rvStreamerFut = rView.streamData(rvPublisher, dsOptions);
+
+    rvPublishers = new ArrayList<>(tableCount);
+    rvStreamerFutures = new ArrayList<>(tableCount);
+
+    for (RecordView<Tuple> rView : rViews) {
+      SubmissionPublisher<DataStreamerItem<Tuple>> publisher = new SubmissionPublisher<>();
+      rvPublishers.add(publisher);
+      rvStreamerFutures.add(rView.streamData(publisher, dsOptions));
+    }
   }
 
   /** {@inheritDoc} */
@@ -74,7 +83,7 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
         value.set(PRIMARY_COLUMN_NAME, keys.get(i));
         values.get(i).forEach((k, v) -> value.set(k, v.toString()));
 
-        rvPublisher.submit(DataStreamerItem.of(value));
+        getPublisher(keys.get(0)).submit(DataStreamerItem.of(value));
       }
 
       return Status.OK;
@@ -115,10 +124,23 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public void cleanup() throws DBException {
-    rvPublisher.close();
+    rvPublishers.stream().parallel().forEach(SubmissionPublisher::close);
 
-    rvStreamerFut.join();
+    rvStreamerFutures.forEach(CompletableFuture::join);
 
     super.cleanup();
+  }
+
+  /**
+   * Get table streamer publisher for key.
+   *
+   * @param key Key.
+   */
+  protected SubmissionPublisher<DataStreamerItem<Tuple>> getPublisher(String key) {
+    int index = tableCount <= 1 ?
+        0 : //skip the key processing for choosing publisher in case of 1 test table
+        (int) (Long.parseLong(key.substring(4)) % tableCount); //CoreWorkload uses key hash with prefix "user"
+
+    return rvPublishers.get(index);
   }
 }

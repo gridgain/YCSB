@@ -68,7 +68,7 @@ public class IgniteClient extends IgniteAbstractClient {
         tBatch.put(tKey, tValues);
       }
 
-      kvView.putAll(null, tBatch);
+      getKvView(keys.get(0)).putAll(null, tBatch);
 
       return Status.OK;
     } catch (Exception e) {
@@ -99,7 +99,7 @@ public class IgniteClient extends IgniteAbstractClient {
       List<Tuple> tKeys = new ArrayList<>();
       keys.forEach(k -> tKeys.add(Tuple.create(1).set(PRIMARY_COLUMN_NAME, k)));
 
-      Map<Tuple, Tuple> tResults = kvView.getAll(null, tKeys);
+      Map<Tuple, Tuple> tResults = getKvView(keys.get(0)).getAll(null, tKeys);
 
       final Tuple tKey = Tuple.create(1);
 
@@ -153,7 +153,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      kvView.remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+      getKvView(key).remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
 
       return Status.OK;
     } catch (Exception e) {
@@ -176,7 +176,7 @@ public class IgniteClient extends IgniteAbstractClient {
     Tuple tValue = Tuple.create(fieldCount);
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
-    kvView.put(tx, tKey, tValue);
+    getKvView(key).put(tx, tKey, tValue);
   }
 
   /**
@@ -190,7 +190,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @NotNull
   protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    Tuple tValue = kvView.get(tx, tKey);
+    Tuple tValue = getKvView(key).get(tx, tKey);
 
     if (tValue == null) {
       return Status.NOT_FOUND;

@@ -84,6 +84,17 @@ public class CoreWorkload extends Workload {
   protected String table;
 
   /**
+   * The name of the property for the number of test tables.
+   * Table names will be formed from TABLENAME_PROPERTY_DEFAULT value with adding index at the end.
+   */
+  public static final String TABLE_COUNT_PROPERTY = "tablecount";
+
+  /**
+   * The default count of test tables.
+   */
+  public static final String TABLE_COUNT_PROPERTY_DEFAULT = "1";
+
+  /**
    * The name of the property for the number of fields in a record.
    */
   public static final String FIELD_COUNT_PROPERTY = "fieldcount";

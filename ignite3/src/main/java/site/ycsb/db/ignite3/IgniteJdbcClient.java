@@ -255,7 +255,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
       }
 
       String sql = String.format("UPDATE %s SET %s WHERE %s = '%s'",
-          cacheName, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
+          tableNamePrefix, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
 
       stmt.executeUpdate(sql);
     }

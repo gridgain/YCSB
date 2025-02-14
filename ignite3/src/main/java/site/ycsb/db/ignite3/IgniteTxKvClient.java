@@ -152,7 +152,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       tx = ignite.transactions().begin(txOptions);
 
-      kvView.remove(tx, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+      getKvView(key).remove(tx, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
 
       tx.commit();
 

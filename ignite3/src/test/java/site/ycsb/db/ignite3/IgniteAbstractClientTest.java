@@ -1,5 +1,6 @@
 package site.ycsb.db.ignite3;
 
+import java.util.List;
 import java.util.Properties;
 import org.junit.Test;
 import site.ycsb.DBException;
@@ -27,13 +28,18 @@ public class IgniteAbstractClientTest {
   public void testCreateDdl() throws DBException {
     doTestCreateDdl(
         "CREATE ZONE IF NOT EXISTS Z1 WITH STORAGE_PROFILES='default,myColumnarStore';",
-        CREATE_TABLE_DDL + " ZONE=\"Z1\" STORAGE PROFILE 'default' SECONDARY ZONE \"Z1\" SECONDARY STORAGE PROFILE 'myColumnarStore'", true);
-    doTestCreateDdl("", CREATE_TABLE_DDL, false);
+        List.of(CREATE_TABLE_DDL +
+                " ZONE \"Z1\" STORAGE PROFILE 'default' SECONDARY ZONE \"Z1\" SECONDARY STORAGE PROFILE 'myColumnarStore'"),
+        true);
+    doTestCreateDdl(
+        "",
+        List.of(CREATE_TABLE_DDL),
+        false);
   }
 
   public void doTestCreateDdl(
       String createZoneDdlExpected,
-      String createTableDdl,
+      List<String> createTableDdlExpected,
       boolean useColumnar
   ) throws DBException {
     IgniteAbstractClient client = new IgniteClient();
@@ -42,7 +48,9 @@ public class IgniteAbstractClientTest {
     client.initProperties(properties);
 
     String createZoneDdlActual = client.createZoneSQL();
+    List<String> createTableDdlActual = client.createTablesSQL();
+
     assertEquals(createZoneDdlExpected, createZoneDdlActual);
-    assertEquals(createTableDdl, client.createTableSQL(createZoneDdlActual));
+    assertEquals(createTableDdlExpected, createTableDdlActual);
   }
 }

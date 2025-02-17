@@ -69,11 +69,15 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static final String DEFAULT_COLUMNAR_PROFILE_NAME = "myColumnarStore";
 
-  protected static final long TABLE_CREATION_TIMEOUT_SECONDS = 10L;
+  protected static final long TABLE_CREATION_TIMEOUT_SECONDS = 30L;
 
   private static final Logger LOG = LogManager.getLogger(IgniteAbstractClient.class);
 
-  protected String cacheName;
+  protected String zoneName;
+
+  protected String tableNamePrefix;
+
+  protected List<String> tableNames = new ArrayList<>();
 
   protected int fieldCount;
 
@@ -100,9 +104,9 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected String hosts;
 
-  protected KeyValueView<Tuple, Tuple> kvView;
+  protected List<KeyValueView<Tuple, Tuple>> kvViews;
 
-  protected RecordView<Tuple> rView;
+  protected List<RecordView<Tuple>> rViews;
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -179,6 +183,12 @@ public abstract class IgniteAbstractClient extends DB {
   protected static TransactionOptions txOptions;
 
   /**
+   * Used to specify the number of test tables.
+   * Table names will be formed from TABLENAME_PROPERTY_DEFAULT value with adding index at the end.
+   */
+  protected static int tableCount;
+
+  /**
    * Set IgniteServer instance to work with.
    *
    * @param igniteSrv Ignite.
@@ -200,7 +210,11 @@ public abstract class IgniteAbstractClient extends DB {
       if (!initCompleted) {
         initIgnite(useEmbeddedIgnite);
 
-        createTestTable(ignite);
+        createZone();
+
+        createTables();
+
+        createIndexes();
 
         initCompleted = true;
       }
@@ -209,10 +223,6 @@ public abstract class IgniteAbstractClient extends DB {
     initViews();
   }
 
-  private void initViews() {
-    kvView = ignite.tables().table(cacheName).keyValueView();
-    rView = ignite.tables().table(cacheName).recordView();
-  }
   /**
    * Init property values.
    *
@@ -237,11 +247,15 @@ public abstract class IgniteAbstractClient extends DB {
       replicas = IgniteParam.REPLICAS.getValue(properties);
       partitions = IgniteParam.PARTITIONS.getValue(properties);
       txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
+      tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
+
+      boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty() || useColumnar;
+      zoneName = doCreateZone ? DEFAULT_ZONE_NAME : "";
 
       String workDirProperty = IgniteParam.WORK_DIR.getValue(properties);
       embeddedIgniteWorkDir = Paths.get(workDirProperty);
 
-      cacheName = properties.getProperty(
+      tableNamePrefix = properties.getProperty(
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
       fieldCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
@@ -250,6 +264,14 @@ public abstract class IgniteAbstractClient extends DB {
       indexCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.INDEX_COUNT_PROPERTY, CoreWorkload.INDEX_COUNT_PROPERTY_DEFAULT));
       indexType = properties.getProperty(CoreWorkload.INDEX_TYPE_PROPERTY, "");
+
+      if (tableCount <= 1) {
+        tableNames.add(tableNamePrefix);
+      } else {
+        for (int i = 0; i < tableCount; i++) {
+          tableNames.add(tableNamePrefix + i);
+        }
+      }
 
       if (indexCount > fieldCount) {
         throw new DBException(String.format(
@@ -334,81 +356,78 @@ public abstract class IgniteAbstractClient extends DB {
   }
 
   /**
-   * Create test table.
-   *
-   * @param node0 Ignite node.
+   * Create test table(s).
    */
-  private void createTestTable(Ignite node0) throws DBException {
-    try {
+  public void createTables() throws DBException {
+    List<String> sqlList = createTablesSQL();
 
-      String createZoneReq = createZoneSQL();
+    for (int i = 0; i < tableCount; i++) {
+      String tableName = tableNames.get(i);
+      String createTableReq = sqlList.get(i);
 
-      String createTableReq = createTableSQL(createZoneReq);
+      LOG.info("Creating table '{}'. SQL line: {}", tableName, createTableReq);
+      ignite.sql().execute(null, createTableReq).close();
 
-      List<String> createIndexesReqs = createIndexesSQL();
-
-      if (!createZoneReq.isEmpty()) {
-        LOG.info("Creating zone. SQL line: {}", createZoneReq);
-        node0.sql().execute(null, createZoneReq).close();
-      }
-
-      LOG.info("Creating table. SQL line: {}", createTableReq);
-      node0.sql().execute(null, createTableReq).close();
-
-      boolean cachePresent = waitForCondition(() -> ignite.tables().table(cacheName) != null,
+      boolean cachePresent = waitForCondition(() -> ignite.tables().table(tableName) != null,
           TABLE_CREATION_TIMEOUT_SECONDS * 1_000L);
 
       if (!cachePresent) {
-        throw new DBException("Table wasn't created in " + TABLE_CREATION_TIMEOUT_SECONDS + " seconds.");
+        throw new DBException(String.format(
+            "Table '%s' wasn't created in %s seconds.", tableName, TABLE_CREATION_TIMEOUT_SECONDS));
       }
-
-      if (!createIndexesReqs.isEmpty()) {
-        LOG.info(String.format("Creating %s indexes.", indexCount));
-
-        createIndexesReqs.forEach(idxReq -> {
-            LOG.info("SQL line: {}", idxReq);
-            node0.sql().execute(null, idxReq).close();
-          });
-      }
-    } catch (Exception e) {
-      throw new DBException(e);
     }
   }
 
   /**
-   * Prepare the creation table SQL line.
-   *
-   * @param createZoneReq Create zone request.
+   * Prepare the creation table SQL line(s).
    */
-  public String createTableSQL(String createZoneReq) {
+  public List<String> createTablesSQL() {
     String fieldsSpecs = valueFields.stream()
         .map(e -> e + " VARCHAR")
         .collect(Collectors.joining(", "));
 
     String withZoneName = "";
-    if (!createZoneReq.isEmpty()) {
+    if (!zoneName.isEmpty()) {
       if (useColumnar) {
         withZoneName = String.format(
             " ZONE \"%s\" STORAGE PROFILE '%s' SECONDARY ZONE \"%s\" SECONDARY STORAGE PROFILE '%s'",
-            DEFAULT_ZONE_NAME,
+            zoneName,
             storageProfile,
-            DEFAULT_ZONE_NAME,
+            zoneName,
             secondaryStorageProfile);
       } else {
-        withZoneName = String.format(" ZONE \"%s\"", DEFAULT_ZONE_NAME);
+        withZoneName = String.format(" ZONE \"%s\"", zoneName);
       }
     }
 
-    return String.format(
-        "CREATE TABLE IF NOT EXISTS %s(%s VARCHAR PRIMARY KEY, %s)%s",
-        cacheName, PRIMARY_COLUMN_NAME, fieldsSpecs, withZoneName);
+    List<String> sqlList = new ArrayList<>();
+
+    for (String tableName : tableNames) {
+      sqlList.add(String.format(
+          "CREATE TABLE IF NOT EXISTS %s(%s VARCHAR PRIMARY KEY, %s)%s",
+          tableName, PRIMARY_COLUMN_NAME, fieldsSpecs, withZoneName));
+    }
+
+    return sqlList;
+  }
+
+  /**
+   * Create zone if needed.
+   */
+  public void createZone() {
+    String createZoneReq = createZoneSQL();
+
+    if (!createZoneReq.isEmpty()) {
+      LOG.info("Creating zone. SQL line: {}", createZoneReq);
+      ignite.sql().execute(null, createZoneReq).close();
+    }
   }
 
   /**
    * Prepare the creation zone SQL line.
    */
   public String createZoneSQL() {
-    if (storageProfile.isEmpty() && replicas.isEmpty() && partitions.isEmpty() && !useColumnar) {
+    if (zoneName.isEmpty()) {
       return "";
     }
 
@@ -431,7 +450,23 @@ public abstract class IgniteAbstractClient extends DB {
         .collect(Collectors.joining(", "));
     String reqWithParams = params.isEmpty() ? "" : " WITH " + params;
 
-    return String.format("CREATE ZONE IF NOT EXISTS %s%s;", DEFAULT_ZONE_NAME, reqWithParams);
+    return String.format("CREATE ZONE IF NOT EXISTS %s%s;", zoneName, reqWithParams);
+  }
+
+  /**
+   * Create indexes if needed.
+   */
+  public void createIndexes() {
+    List<String> sqlList = createIndexesSQL();
+
+    if (!sqlList.isEmpty()) {
+      LOG.info(String.format("Creating %s indexes.", indexCount));
+
+      sqlList.forEach(idxReq -> {
+          LOG.info("SQL line: {}", idxReq);
+          ignite.sql().execute(null, idxReq).close();
+        });
+    }
   }
 
   /**
@@ -447,10 +482,23 @@ public abstract class IgniteAbstractClient extends DB {
     String usingIndexType = indexType != null && !indexType.isEmpty() ? " USING " + indexType.toUpperCase() : "";
 
     valueFields.subList(0, indexCount).forEach(field ->
-        createIndexesReqs.add(
-            String.format("CREATE INDEX IF NOT EXISTS idx_%s ON %s%s (%s);", field, cacheName, usingIndexType, field)));
+        createIndexesReqs.add(String.format("CREATE INDEX IF NOT EXISTS idx_%s ON %s%s (%s);",
+            field, tableNamePrefix, usingIndexType, field)));
 
     return createIndexesReqs;
+  }
+
+  /**
+   * Init Key-Value view and Record view lists.
+   */
+  private void initViews() {
+    kvViews = new ArrayList<>(tableCount);
+    rViews = new ArrayList<>(tableCount);
+
+    for (String tableName : tableNames) {
+      kvViews.add(ignite.tables().table(tableName).keyValueView());
+      rViews.add(ignite.tables().table(tableName).recordView());
+    }
   }
 
   /**
@@ -522,7 +570,7 @@ public abstract class IgniteAbstractClient extends DB {
       if (curInitCount <= 0) {
         try {
           if (debug) {
-            LOG.info("Records in table {}: {}", cacheName, entriesInTable(ignite, cacheName));
+            LOG.info("Records in table {}: {}", tableNamePrefix, entriesInTable(ignite, tableNamePrefix));
           }
 
           if (igniteClient != null) {
@@ -546,5 +594,18 @@ public abstract class IgniteAbstractClient extends DB {
   public Status scan(String table, String startkey, int recordcount,
       Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
     return Status.NOT_IMPLEMENTED;
+  }
+
+  /**
+   * Get table Key-Value view for key.
+   *
+   * @param key Key.
+   */
+  protected KeyValueView<Tuple, Tuple> getKvView(String key) {
+    int index = tableCount <= 1 ?
+        0 : //skip the key processing for choosing view in case of 1 test table
+        (int) (Long.parseLong(key.substring(4)) % tableCount); //CoreWorkload uses key hash with prefix "user"
+
+    return kvViews.get(index);
   }
 }

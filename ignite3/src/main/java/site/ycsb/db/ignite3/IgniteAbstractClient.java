@@ -79,8 +79,6 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected List<String> tableNames = new ArrayList<>();
 
-  protected int tableCount;
-
   protected int fieldCount;
 
   protected int indexCount;
@@ -185,6 +183,12 @@ public abstract class IgniteAbstractClient extends DB {
   protected static TransactionOptions txOptions;
 
   /**
+   * Used to specify the number of test tables.
+   * Table names will be formed from TABLENAME_PROPERTY_DEFAULT value with adding index at the end.
+   */
+  protected static int tableCount;
+
+  /**
    * Set IgniteServer instance to work with.
    *
    * @param igniteSrv Ignite.
@@ -243,6 +247,7 @@ public abstract class IgniteAbstractClient extends DB {
       replicas = IgniteParam.REPLICAS.getValue(properties);
       partitions = IgniteParam.PARTITIONS.getValue(properties);
       txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
+      tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
       boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty() || useColumnar;
       zoneName = doCreateZone ? DEFAULT_ZONE_NAME : "";
@@ -252,8 +257,6 @@ public abstract class IgniteAbstractClient extends DB {
 
       tableNamePrefix = properties.getProperty(
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
-      tableCount = Integer.parseInt(properties.getProperty(
-          CoreWorkload.TABLE_COUNT_PROPERTY, CoreWorkload.TABLE_COUNT_PROPERTY_DEFAULT));
       fieldCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
       fieldPrefix = properties.getProperty(

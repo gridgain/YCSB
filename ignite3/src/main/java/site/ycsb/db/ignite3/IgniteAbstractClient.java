@@ -71,6 +71,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static final long TABLE_CREATION_TIMEOUT_SECONDS = 30L;
 
+  protected static final String NODES_FILTER_ATTRIBUTE = "ycsbFilter";
+
   private static final Logger LOG = LogManager.getLogger(IgniteAbstractClient.class);
 
   protected String zoneName;
@@ -173,6 +175,11 @@ public abstract class IgniteAbstractClient extends DB {
   protected static String partitions;
 
   /**
+   * Used to filter nodes by NODES_FILTER_ATTRIBUTE.
+   */
+  protected static String nodesFilter;
+
+  /**
    * Used to set explicit RO transactions (used in pair with Tx clients and 'batchsize').
    */
   protected static boolean txReadOnly;
@@ -246,10 +253,12 @@ public abstract class IgniteAbstractClient extends DB {
 
       replicas = IgniteParam.REPLICAS.getValue(properties);
       partitions = IgniteParam.PARTITIONS.getValue(properties);
+      nodesFilter = IgniteParam.NODES_FILTER.getValue(properties);
       txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
       tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
-      boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty() || useColumnar;
+      boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()
+          || !nodesFilter.isEmpty() || useColumnar;
       zoneName = doCreateZone ? DEFAULT_ZONE_NAME : "";
 
       String workDirProperty = IgniteParam.WORK_DIR.getValue(properties);
@@ -445,7 +454,9 @@ public abstract class IgniteAbstractClient extends DB {
     String paramStorageProfiles = String.format("STORAGE_PROFILES='%s'", storageProfiles);
     String paramReplicas = replicas.isEmpty() ? "" : "replicas=" + replicas;
     String paramPartitions = partitions.isEmpty() ? "" : "partitions=" + partitions;
-    String params = Stream.of(paramStorageProfiles, paramReplicas, paramPartitions)
+    String paramNodesFilter = nodesFilter.isEmpty() ? "" :
+        String.format("DATA_NODES_FILTER='$[?(@.%s == \"%s\")]'", NODES_FILTER_ATTRIBUTE, nodesFilter);
+    String params = Stream.of(paramStorageProfiles, paramReplicas, paramPartitions, paramNodesFilter)
         .filter(s -> !s.isEmpty())
         .collect(Collectors.joining(", "));
     String reqWithParams = params.isEmpty() ? "" : " WITH " + params;

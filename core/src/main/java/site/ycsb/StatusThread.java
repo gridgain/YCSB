@@ -166,8 +166,15 @@ public class StatusThread extends Thread {
     DecimalFormat d = new DecimalFormat("#.##");
     String labelString = this.label + format.format(new Date());
 
-    StringBuilder msg = new StringBuilder(labelString).append(iswarmupdone ? " [PAYLOAD] " : " [WARM-UP] ")
-        .append(interval / 1000).append(" sec: ");
+    StringBuilder msg = new StringBuilder(labelString);
+
+    if (totalops > 0) {
+      msg.append(iswarmupdone ? " [PAYLOAD] " : " [WARM-UP] ");
+    } else {
+      msg.append(" [SETUP] ");
+    }
+
+    msg.append(interval / 1000).append(" sec: ");
     msg.append(totalops).append(" operations; ");
 
     if (totalops != 0) {

@@ -226,8 +226,8 @@ public final class Client {
    *
    * @throws IOException Either failed to write to output stream or failed to close it.
    */
-  private static void exportMeasurements(Properties props, int opcount, int warmupopcount, long runtime)
-      throws IOException {
+  private static void exportMeasurements(Properties props, int payloadOpsCount, int warmupOpsCount,
+      long warmupStart, long warmupEnd, long payloadStart, long payloadEnd) throws IOException {
     MeasurementsExporter exporter = null;
     try {
       // if no destination file is provided the results will be written to stdout
@@ -252,11 +252,21 @@ public final class Client {
         exporter = new TextMeasurementsExporter(out);
       }
 
-      exporter.write("OVERALL", "RunTime(ms)", runtime);
-      double throughput = 1000.0 * (opcount) / (runtime);
-      exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
-      exporter.write("OVERALL", "Operations(payload)", opcount);
-      exporter.write("OVERALL", "Operations(warm-up)", warmupopcount);
+      long warmupRuntime = warmupEnd - warmupStart;
+      long payloadRuntime = payloadEnd - payloadStart;
+      long overallRuntime = warmupRuntime + payloadRuntime;
+      double warmupThroughput = 1000.0 * (warmupOpsCount) / (warmupRuntime);
+      double payloadThroughput = 1000.0 * (payloadOpsCount) / (payloadRuntime);
+
+      exporter.write("WARM-UP", "StartTime(ms)", warmupStart);
+      exporter.write("WARM-UP", "RunTime(ms)", warmupRuntime);
+      exporter.write("WARM-UP", "Throughput(ops/sec)", warmupThroughput);
+      exporter.write("WARM-UP", "Operations", warmupOpsCount);
+
+      exporter.write("PAYLOAD", "StartTime(ms)", payloadStart);
+      exporter.write("PAYLOAD", "RunTime(ms)", payloadRuntime);
+      exporter.write("PAYLOAD", "Throughput(ops/sec)", payloadThroughput);
+      exporter.write("PAYLOAD", "Operations", payloadOpsCount);
 
       final Map<String, Long[]> gcs = Utils.getGCStatst();
       long totalGCCount = 0;
@@ -265,14 +275,14 @@ public final class Client {
         exporter.write("TOTAL_GCS_" + entry.getKey(), "Count", entry.getValue()[0]);
         exporter.write("TOTAL_GC_TIME_" + entry.getKey(), "Time(ms)", entry.getValue()[1]);
         exporter.write("TOTAL_GC_TIME_%_" + entry.getKey(), "Time(%)",
-            ((double) entry.getValue()[1] / runtime) * (double) 100);
+            ((double) entry.getValue()[1] / overallRuntime) * (double) 100);
         totalGCCount += entry.getValue()[0];
         totalGCTime += entry.getValue()[1];
       }
       exporter.write("TOTAL_GCs", "Count", totalGCCount);
 
       exporter.write("TOTAL_GC_TIME", "Time(ms)", totalGCTime);
-      exporter.write("TOTAL_GC_TIME_%", "Time(%)", ((double) totalGCTime / runtime) * (double) 100);
+      exporter.write("TOTAL_GC_TIME_%", "Time(%)", ((double) totalGCTime / overallRuntime) * (double) 100);
       if (statusthread != null && statusthread.trackJVMStats()) {
         exporter.write("MAX_MEM_USED", "MBs", statusthread.getMaxUsedMem());
         exporter.write("MIN_MEM_USED", "MBs", statusthread.getMinUsedMem());
@@ -346,9 +356,11 @@ public final class Client {
     }
 
     Thread terminator = null;
-    long st;
-    long en;
-    int opsDone;
+    long payloadStart;
+    long payloadEnd;
+    long warmupStart;
+    long warmupEnd;
+    int payloadOpsDone;
     int warmUpOpsDone;
 
     try (final TraceScope span = tracer.newScope(CLIENT_WORKLOAD_SPAN)) {
@@ -358,7 +370,9 @@ public final class Client {
         threads.put(new Thread(tracer.wrap(client, "ClientThread")), client);
       }
 
-      st = System.currentTimeMillis();
+      warmupStart = System.currentTimeMillis();
+      payloadStart = warmupStart;
+      warmupEnd = warmupStart;
 
       for (Thread t : threads.keySet()) {
         t.start();
@@ -369,21 +383,22 @@ public final class Client {
         terminator.start();
       }
 
-      opsDone = 0;
+      payloadOpsDone = 0;
       warmUpOpsDone = 0;
 
       for (Map.Entry<Thread, ClientThread> entry : threads.entrySet()) {
         try {
           entry.getKey().join();
-          opsDone += entry.getValue().getPayloadOpsDone();
+          payloadOpsDone += entry.getValue().getPayloadOpsDone();
           warmUpOpsDone += entry.getValue().getWarmUpOpsDone();
-          st = entry.getValue().getPayloadStart();
+          payloadStart = entry.getValue().getPayloadStart();
+          warmupEnd = entry.getValue().getWarmupEnd();
         } catch (InterruptedException ignored) {
           // ignored
         }
       }
 
-      en = System.currentTimeMillis();
+      payloadEnd = System.currentTimeMillis();
     }
 
     try {
@@ -414,7 +429,7 @@ public final class Client {
 
     try {
       try (final TraceScope span = tracer.newScope(CLIENT_EXPORT_MEASUREMENTS_SPAN)) {
-        exportMeasurements(props, opsDone, warmUpOpsDone, en - st);
+        exportMeasurements(props, payloadOpsDone, warmUpOpsDone, warmupStart, warmupEnd, payloadStart, payloadEnd);
       }
     } catch (IOException e) {
       System.err.println("Could not export measurements, error: " + e.getMessage());

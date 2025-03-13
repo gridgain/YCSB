@@ -255,8 +255,8 @@ public final class Client {
       long warmupRuntime = warmupEnd - warmupStart;
       long payloadRuntime = payloadEnd - payloadStart;
       long overallRuntime = warmupRuntime + payloadRuntime;
-      double warmupThroughput = 1000.0 * (warmupOpsCount) / (warmupRuntime);
-      double payloadThroughput = 1000.0 * (payloadOpsCount) / (payloadRuntime);
+      double warmupThroughput = 1000d * warmupOpsCount / warmupRuntime;
+      double payloadThroughput = 1000d * payloadOpsCount / payloadRuntime;
 
       exporter.write("WARM-UP", "StartTime(ms)", warmupStart);
       exporter.write("WARM-UP", "RunTime(ms)", warmupRuntime);

@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -54,6 +56,13 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       tx.commit();
 
       return status;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error reading key in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -90,6 +99,13 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error reading batch of keys in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -117,17 +133,18 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
         tx.commit();
 
         return Status.OK;
+      } catch (CacheException cacheEx) {
+        if (cacheEx.getCause() instanceof TransactionTimeoutException
+            && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+          LOG.warn("Deadlock detected.", cacheEx);
+        }
+
+        throw cacheEx;
       } catch (IgniteException txEx) {
         LOG.error("Error updating key in transaction. Calling rollback.", txEx);
         tx.rollback();
 
         throw txEx;
-      } catch (CacheException e) {
-        if (!e.getMessage().contains("Failed to update some keys because they had been modified concurrently")) {
-          LOG.error(String.format("Error in processing update table: %s", table), e);
-
-          return Status.ERROR;
-        }
       } catch (Exception e) {
         LOG.error(String.format("Error updating key: %s", key), e);
 
@@ -149,6 +166,13 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error inserting key in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -176,6 +200,13 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error inserting batch of keys in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -201,6 +232,13 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error deleting key in transaction. Calling rollback.", txEx);
       tx.rollback();

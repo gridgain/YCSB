@@ -17,6 +17,7 @@
 
 package site.ycsb.db.ignite3;
 
+import static site.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
 import static site.ycsb.Client.parseLongWithModifiers;
 
 import java.io.InputStream;
@@ -126,6 +127,11 @@ public abstract class IgniteAbstractClient extends DB {
   protected static boolean debug = false;
 
   /**
+   * Whether to perform "run" phase ({@code true}) or "load" phase ({@code false}).
+   */
+  protected static boolean isRunPhase;
+
+  /**
    * Whether to shut down externally provided Ignite instance.
    */
   protected static boolean shutdownExternalIgnite = false;
@@ -217,11 +223,13 @@ public abstract class IgniteAbstractClient extends DB {
       if (!initCompleted) {
         initIgnite(useEmbeddedIgnite);
 
-        createZone();
+        if (!isRunPhase) {
+          createZone();
 
-        createTables();
+          createTables();
 
-        createIndexes();
+          createIndexes();
+        }
 
         initCompleted = true;
       }
@@ -264,6 +272,7 @@ public abstract class IgniteAbstractClient extends DB {
       String workDirProperty = IgniteParam.WORK_DIR.getValue(properties);
       embeddedIgniteWorkDir = Paths.get(workDirProperty);
 
+      isRunPhase = Boolean.parseBoolean(properties.getProperty(DO_TRANSACTIONS_PROPERTY, "true"));
       tableNamePrefix = properties.getProperty(
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
       fieldCount = Integer.parseInt(properties.getProperty(

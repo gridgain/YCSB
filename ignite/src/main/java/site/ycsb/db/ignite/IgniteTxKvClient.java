@@ -20,8 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -49,6 +52,13 @@ public class IgniteTxKvClient extends IgniteClient {
       tx.commit();
 
       return convert(binObj, fields, result);
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error reading key in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -87,6 +97,13 @@ public class IgniteTxKvClient extends IgniteClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error reading batch of keys in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -112,6 +129,13 @@ public class IgniteTxKvClient extends IgniteClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error updating key in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -139,6 +163,13 @@ public class IgniteTxKvClient extends IgniteClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error inserting key in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -168,6 +199,13 @@ public class IgniteTxKvClient extends IgniteClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error inserting batch of keys in transaction. Calling rollback.", txEx);
       tx.rollback();
@@ -193,6 +231,13 @@ public class IgniteTxKvClient extends IgniteClient {
       tx.commit();
 
       return Status.OK;
+    } catch (CacheException cacheEx) {
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
+          && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
+        LOG.warn("Deadlock detected.", cacheEx);
+      }
+
+      throw cacheEx;
     } catch (IgniteException txEx) {
       LOG.error("Error deleting key in transaction. Calling rollback.", txEx);
       tx.rollback();

@@ -53,7 +53,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       return convert(binObj, fields, result);
     } catch (CacheException cacheEx) {
-      if (cacheEx.getCause() instanceof TransactionTimeoutException
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
         LOG.warn("Deadlock detected.", cacheEx);
       }
@@ -98,7 +98,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       return Status.OK;
     } catch (CacheException cacheEx) {
-      if (cacheEx.getCause() instanceof TransactionTimeoutException
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
         LOG.warn("Deadlock detected.", cacheEx);
       }
@@ -130,7 +130,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       return Status.OK;
     } catch (CacheException cacheEx) {
-      if (cacheEx.getCause() instanceof TransactionTimeoutException
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
         LOG.warn("Deadlock detected.", cacheEx);
       }
@@ -164,7 +164,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       return Status.OK;
     } catch (CacheException cacheEx) {
-      if (cacheEx.getCause() instanceof TransactionTimeoutException
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
         LOG.warn("Deadlock detected.", cacheEx);
       }
@@ -200,7 +200,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       return Status.OK;
     } catch (CacheException cacheEx) {
-      if (cacheEx.getCause() instanceof TransactionTimeoutException
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
         LOG.warn("Deadlock detected.", cacheEx);
       }
@@ -232,7 +232,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       return Status.OK;
     } catch (CacheException cacheEx) {
-      if (cacheEx.getCause() instanceof TransactionTimeoutException
+      if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
         LOG.warn("Deadlock detected.", cacheEx);
       }

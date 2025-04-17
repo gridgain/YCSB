@@ -41,7 +41,7 @@ public class IgniteAbstractClientTest {
     properties.put("useColumnar", String.valueOf(true));
 
     doTestCreateDdl(
-        "CREATE ZONE IF NOT EXISTS Z1 STORAGE PROFILES ['default,myColumnarStore'];",
+        "CREATE ZONE IF NOT EXISTS Z1 STORAGE PROFILES ['default', 'myColumnarStore'];",
         List.of(CREATE_TABLE_DDL +
             " ZONE \"Z1\" STORAGE PROFILE 'default' SECONDARY ZONE \"Z1\" SECONDARY STORAGE PROFILE 'myColumnarStore'"),
         properties);

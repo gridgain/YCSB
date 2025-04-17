@@ -456,7 +456,7 @@ public abstract class IgniteAbstractClient extends DB {
         secondaryStorageProfile;
 
     String storageProfiles = useColumnar ?
-        String.join(",", storageProfile, secondaryStorageProfile) :
+        String.join("', '", storageProfile, secondaryStorageProfile) :
         storageProfile;
 
     List<String> params = new ArrayList<>();

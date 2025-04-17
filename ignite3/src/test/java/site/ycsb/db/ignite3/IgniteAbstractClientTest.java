@@ -19,32 +19,56 @@ public class IgniteAbstractClientTest {
   public static Properties properties() {
     Properties result = new Properties();
 
-    result.put("hosts","192.168.209.148");
+    result.put("hosts", "192.168.209.148");
 
     return result;
   }
 
   @Test
   public void testCreateDdl() throws DBException {
-    doTestCreateDdl(
-        "CREATE ZONE IF NOT EXISTS Z1 STORAGE PROFILES ['default,myColumnarStore'];",
-        List.of(CREATE_TABLE_DDL +
-                " ZONE \"Z1\" STORAGE PROFILE 'default' SECONDARY ZONE \"Z1\" SECONDARY STORAGE PROFILE 'myColumnarStore'"),
-        true);
+    Properties properties = properties();
+
     doTestCreateDdl(
         "",
         List.of(CREATE_TABLE_DDL),
-        false);
+        properties);
+  }
+
+  @Test
+  public void testCreateDdlWithColumnar() throws DBException {
+    Properties properties = properties();
+
+    properties.put("useColumnar", String.valueOf(true));
+
+    doTestCreateDdl(
+        "CREATE ZONE IF NOT EXISTS Z1 STORAGE PROFILES ['default,myColumnarStore'];",
+        List.of(CREATE_TABLE_DDL +
+            " ZONE \"Z1\" STORAGE PROFILE 'default' SECONDARY ZONE \"Z1\" SECONDARY STORAGE PROFILE 'myColumnarStore'"),
+        properties);
+  }
+
+  @Test
+  public void testCreateDdlWithReplicasAndPartitionsAndNodesFilter() throws DBException {
+    Properties properties = properties();
+
+    properties.put("useColumnar", String.valueOf(false));
+    properties.put("replicas", "1");
+    properties.put("partitions", "2");
+    properties.put("nodesFilter", "test_filter");
+
+    doTestCreateDdl(
+        "CREATE ZONE IF NOT EXISTS Z1 "
+            + "(replicas 1, partitions 2, NODES FILTER '$[?(@.ycsbFilter == \"test_filter\")]') STORAGE PROFILES ['default'];",
+        List.of(CREATE_TABLE_DDL + " ZONE \"Z1\""),
+        properties);
   }
 
   public void doTestCreateDdl(
       String createZoneDdlExpected,
       List<String> createTableDdlExpected,
-      boolean useColumnar
+      Properties properties
   ) throws DBException {
     IgniteAbstractClient client = new IgniteClient();
-    Properties properties = properties();
-    properties.put("useColumnar", String.valueOf(useColumnar));
     client.initProperties(properties);
 
     String createZoneDdlActual = client.createZoneSQL();

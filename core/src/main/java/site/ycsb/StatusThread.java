@@ -43,6 +43,7 @@ public class StatusThread extends Thread {
 
   private final String label;
   private final boolean standardstatus;
+  private final int batchsize;
 
   // The interval for reporting status.
   private long sleeptimeNs;
@@ -68,8 +69,8 @@ public class StatusThread extends Thread {
    * @param statusIntervalSeconds The number of seconds between status updates.
    */
   public StatusThread(CountDownLatch completeLatch, List<ClientThread> clients,
-                      String label, boolean standardstatus, int statusIntervalSeconds) {
-    this(completeLatch, clients, label, standardstatus, statusIntervalSeconds, false);
+                      String label, boolean standardstatus, int statusIntervalSeconds, int batchsize) {
+    this(completeLatch, clients, label, standardstatus, statusIntervalSeconds, batchsize, false);
   }
 
   /**
@@ -81,11 +82,12 @@ public class StatusThread extends Thread {
    * @param label                 The label for the status.
    * @param standardstatus        If true the status is printed to stdout in addition to stderr.
    * @param statusIntervalSeconds The number of seconds between status updates.
+   * @param batchsize             Size of the batch for each operation.
    * @param trackJVMStats         Whether or not to track JVM stats.
    */
   public StatusThread(CountDownLatch completeLatch, List<ClientThread> clients,
                       String label, boolean standardstatus, int statusIntervalSeconds,
-                      boolean trackJVMStats) {
+                      int batchsize, boolean trackJVMStats) {
     this.completeLatch = completeLatch;
     this.clients = clients;
     this.label = label;
@@ -93,6 +95,7 @@ public class StatusThread extends Thread {
     sleeptimeNs = TimeUnit.SECONDS.toNanos(statusIntervalSeconds);
     measurements = Measurements.getMeasurements();
     this.trackJVMStats = trackJVMStats;
+    this.batchsize = batchsize;
   }
 
   /**
@@ -157,9 +160,9 @@ public class StatusThread extends Thread {
 
 
     long interval = endIntervalMs - startTimeMs;
-    double throughput = 1000.0 * (((double) totalops) / (double) interval);
-    double curthroughput = 1000.0 * (((double) (totalops - lastTotalOps)) /
-        ((double) (endIntervalMs - startIntervalMs)));
+    double throughput = 1000d * ((double) totalops) / ((double) interval) / ((double) batchsize);
+    double curthroughput = 1000d * ((double) (totalops - lastTotalOps)) /
+        ((double) (endIntervalMs - startIntervalMs)) / ((double) batchsize);
     long estremaining = (long) Math.ceil(todoops / throughput);
 
 
@@ -175,7 +178,7 @@ public class StatusThread extends Thread {
     }
 
     msg.append(interval / 1000).append(" sec: ");
-    msg.append(totalops).append(" operations; ");
+    msg.append(totalops / batchsize).append(" operations; ");
 
     if (totalops != 0) {
       msg.append(d.format(curthroughput)).append(" current ops/sec; ");

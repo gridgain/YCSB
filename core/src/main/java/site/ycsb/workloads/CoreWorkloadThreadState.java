@@ -20,6 +20,8 @@ public class CoreWorkloadThreadState {
   private int warmupOpsDone;
   private int totalOpsDone;
 
+  private int batchSize;
+
   private List<String> batchKeysList;
   private List<Set<String>> batchFieldsList;
   private List<Map<String, ByteIterator>> batchValuesList;
@@ -42,6 +44,7 @@ public class CoreWorkloadThreadState {
     batchKeysList = new ArrayList<>(batchsize);
     batchFieldsList = new ArrayList<>(batchsize);
     batchValuesList = new ArrayList<>(batchsize);
+    batchSize = batchsize;
   }
 
   public int getPayloadOpsCount() {
@@ -84,7 +87,7 @@ public class CoreWorkloadThreadState {
     return warmupOpsDone >= warmupOpsCount;
   }
 
-  public boolean isBatchPrepared(int batchSize) {
+  public boolean isBatchPrepared() {
     int currentOpNum = totalOpsDone + 1;
 
     return getBatchKeysList().size() == batchSize

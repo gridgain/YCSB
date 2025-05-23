@@ -679,7 +679,7 @@ public class CoreWorkload extends Workload {
         threadState.getBatchKeysList().add(dbkey);
         threadState.getBatchValuesList().add(values);
 
-        if (threadState.isBatchPrepared(batchsize)) {
+        if (threadState.isBatchPrepared()) {
           status = db.batchInsert(table, threadState.getBatchKeysList(), threadState.getBatchValuesList());
           threadState.getBatchKeysList().clear();
           threadState.getBatchValuesList().clear();
@@ -824,7 +824,7 @@ public class CoreWorkload extends Workload {
       threadState.getBatchKeysList().add(keyname);
       threadState.getBatchFieldsList().add(fields);
 
-      if (threadState.isBatchPrepared(batchsize)) {
+      if (threadState.isBatchPrepared()) {
         List<Map<String, ByteIterator>> results = new LinkedList<>();
         db.batchRead(table, threadState.getBatchKeysList(), threadState.getBatchFieldsList(), results);
         threadState.getBatchKeysList().clear();
@@ -942,7 +942,7 @@ public class CoreWorkload extends Workload {
         threadState.getBatchKeysList().add(dbkey);
         threadState.getBatchValuesList().add(values);
 
-        if (threadState.isBatchPrepared(batchsize)) {
+        if (threadState.isBatchPrepared()) {
           db.batchInsert(table, threadState.getBatchKeysList(), threadState.getBatchValuesList());
           threadState.getBatchKeysList().clear();
           threadState.getBatchValuesList().clear();

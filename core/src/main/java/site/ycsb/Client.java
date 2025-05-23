@@ -320,6 +320,7 @@ public final class Client {
     int threadcount = Integer.parseInt(props.getProperty(THREAD_COUNT_PROPERTY, "1"));
     String dbname = props.getProperty(DB_PROPERTY, "site.ycsb.BasicDB");
     int target = Integer.parseInt(props.getProperty(TARGET_PROPERTY, "0"));
+    int batchsize = parseIntWithModifiers(props.getProperty(BATCH_SIZE_PROPERTY, DEFAULT_BATCH_SIZE));
 
     //compute the target throughput
     double targetperthreadperms = -1;
@@ -351,7 +352,7 @@ public final class Client {
       boolean trackJVMStats = props.getProperty(Measurements.MEASUREMENT_TRACK_JVM_PROPERTY,
           Measurements.MEASUREMENT_TRACK_JVM_PROPERTY_DEFAULT).equals("true");
       statusthread = new StatusThread(completeLatch, clients, label, standardstatus, statusIntervalSeconds,
-          trackJVMStats);
+          batchsize, trackJVMStats);
       statusthread.start();
     }
 
@@ -429,7 +430,10 @@ public final class Client {
 
     try {
       try (final TraceScope span = tracer.newScope(CLIENT_EXPORT_MEASUREMENTS_SPAN)) {
-        exportMeasurements(props, payloadOpsDone, warmUpOpsDone, warmupStart, warmupEnd, payloadStart, payloadEnd);
+        int batchedPayloadOpsDone = payloadOpsDone / batchsize;
+        int batchedWarmUpOpsDone = warmUpOpsDone / batchsize;
+        exportMeasurements(props, batchedPayloadOpsDone, batchedWarmUpOpsDone, warmupStart, warmupEnd,
+            payloadStart, payloadEnd);
       }
     } catch (IOException e) {
       System.err.println("Could not export measurements, error: " + e.getMessage());
@@ -447,8 +451,9 @@ public final class Client {
     final List<ClientThread> clients = new ArrayList<>(threadcount);
     try (final TraceScope span = tracer.newScope(CLIENT_INIT_SPAN)) {
       int opcount;
+      int batchsize = parseIntWithModifiers(props.getProperty(BATCH_SIZE_PROPERTY, DEFAULT_BATCH_SIZE));
       if (dotransactions) {
-        opcount = parseIntWithModifiers(props.getProperty(OPERATION_COUNT_PROPERTY, "0"));
+        opcount = parseIntWithModifiers(props.getProperty(OPERATION_COUNT_PROPERTY, "0")) * batchsize;
       } else {
         if (props.containsKey(INSERT_COUNT_PROPERTY)) {
           opcount = parseIntWithModifiers(props.getProperty(INSERT_COUNT_PROPERTY, "0"));
@@ -460,7 +465,8 @@ public final class Client {
         threadcount = opcount;
         System.out.println("Warning: the threadcount is bigger than recordcount, the threadcount will be recordcount!");
       }
-      int warmupops = parseIntWithModifiers(props.getProperty(WARM_UP_OPERATIONS_COUNT_PROPERTY, DEFAULT_WARMUP_OPS));
+      int warmupops = parseIntWithModifiers(props.getProperty(WARM_UP_OPERATIONS_COUNT_PROPERTY, DEFAULT_WARMUP_OPS))
+          * batchsize;
       for (int threadid = 0; threadid < threadcount; threadid++) {
         int threadopcount = opcount / threadcount;
         int threadwarmupopcount = warmupops / threadcount;

@@ -130,37 +130,37 @@ LICENSE file.
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-core</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-api</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-jdbc</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-client</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-runner</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 

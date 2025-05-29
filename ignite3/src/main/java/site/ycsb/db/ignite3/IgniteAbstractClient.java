@@ -196,6 +196,11 @@ public abstract class IgniteAbstractClient extends DB {
   protected static TransactionOptions txOptions;
 
   /**
+   * Options to initialize table views with Near Cache enabled.
+   */
+  protected static TableViewOptions tableViewOptions;
+
+  /**
    * Used to specify the number of test tables.
    * Table names will be formed from TABLENAME_PROPERTY_DEFAULT value with adding index at the end.
    */
@@ -264,6 +269,11 @@ public abstract class IgniteAbstractClient extends DB {
       nodesFilter = IgniteParam.NODES_FILTER.getValue(properties);
       txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
       tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
+
+      if (IgniteParam.ENABLE_NEAR_CACHE.getValue(properties)) {
+        // TODO: parametrize options via builder
+        tableViewOptions = TableViewOptions.DEFAULT;
+      }
 
       boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()
           || !nodesFilter.isEmpty() || useColumnar;
@@ -516,8 +526,14 @@ public abstract class IgniteAbstractClient extends DB {
     rViews = new ArrayList<>(tableCount);
 
     for (String tableName : tableNames) {
-      kvViews.add(ignite.tables().table(tableName).keyValueView());
-      rViews.add(ignite.tables().table(tableName).recordView());
+      // TODO: refactor this
+      if (tableViewOptions != null) {
+        kvViews.add(ignite.tables().table(tableName).keyValueView(tableViewOptions));
+        rViews.add(ignite.tables().table(tableName).recordView(tableViewOptions));
+      } else {
+        kvViews.add(ignite.tables().table(tableName).keyValueView());
+        rViews.add(ignite.tables().table(tableName).recordView());
+      }
     }
   }
 

@@ -52,6 +52,9 @@ public final class IgniteParam<T> {
   public static final IgniteParam<String> WORK_DIR =
       new IgniteParam<>("workDir", "../ignite3-ycsb-work/" + System.currentTimeMillis(), s -> s);
 
+  public static final IgniteParam<Boolean> ENABLE_NEAR_CACHE =
+      new IgniteParam<>("enableNearCache", false, Boolean::parseBoolean);
+
   /**
    * Parameter name.
    */

@@ -55,6 +55,18 @@ public final class IgniteParam<T> {
   public static final IgniteParam<Boolean> ENABLE_NEAR_CACHE =
       new IgniteParam<>("enableNearCache", false, Boolean::parseBoolean);
 
+  // -1 means use default value.
+  public static final IgniteParam<Integer> NEAR_CACHE_MAX_ENTRIES =
+      new IgniteParam<>("nearCacheMaxEntries", -1, Integer::parseInt);
+
+  // -1 means use default value.
+  public static final IgniteParam<Integer> NEAR_CACHE_EXPIRE_AFTER_ACCESS =
+      new IgniteParam<>("nearCacheExpireAfterAcess", -1, Integer::parseInt);
+
+  // -1 means use default value.
+  public static final IgniteParam<Integer> NEAR_CACHE_EXPIRE_AFTER_UPDATE =
+      new IgniteParam<>("nearCacheExpireAfterUpdate", -1, Integer::parseInt);
+
   /**
    * Parameter name.
    */

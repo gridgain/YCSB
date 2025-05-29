@@ -271,8 +271,7 @@ public abstract class IgniteAbstractClient extends DB {
       tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
       if (IgniteParam.ENABLE_NEAR_CACHE.getValue(properties)) {
-        // TODO: parametrize options via builder
-        tableViewOptions = TableViewOptions.DEFAULT;
+        tableViewOptions = Utils.parseTableViewOptions(properties);
       }
 
       boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()

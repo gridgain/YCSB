@@ -4,10 +4,22 @@ import java.util.Properties;
 import org.apache.ignite.table.TableViewOptions; // GG9 only!
 import org.apache.ignite.table.NearCacheOptions; // GG9 only!
 
-public class Utils {
-  public static TableViewOptions parseTableViewOptions(Properties properties) {
+class Utils {
+  static TableViewOptions parseTableViewOptions(Properties properties) {
+    NearCacheOptions.Builder nearCacheOptionsBuilder = NearCacheOptions.builder();
 
-    // TODO: parametrize with NearCacheOptions
-    return TableViewOptions.DEFAULT;
+    if (IgniteParam.NEAR_CACHE_MAX_ENTRIES.getValue(properties) >= 0) {
+      nearCacheOptionsBuilder.maxEntries(IgniteParam.NEAR_CACHE_MAX_ENTRIES.getValue(properties));
+    }
+
+    if (IgniteParam.NEAR_CACHE_EXPIRE_AFTER_ACCESS.getValue(properties) >= 0) {
+      nearCacheOptionsBuilder.expireAfterAccess(IgniteParam.NEAR_CACHE_EXPIRE_AFTER_ACCESS.getValue(properties));
+    }
+
+    if (IgniteParam.NEAR_CACHE_EXPIRE_AFTER_UPDATE.getValue(properties) >= 0) {
+      nearCacheOptionsBuilder.expireAfterUpdate(IgniteParam.NEAR_CACHE_EXPIRE_AFTER_UPDATE.getValue(properties));
+    }
+
+    return TableViewOptions.builder().nearCacheOptions(nearCacheOptionsBuilder.build());
   }
 }

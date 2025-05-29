@@ -528,6 +528,8 @@ public abstract class IgniteAbstractClient extends DB {
     for (String tableName : tableNames) {
       // TODO: refactor this
       if (tableViewOptions != null) {
+        LOG.info("Using KV view and Record view with Near Cache");
+
         kvViews.add(ignite.tables().table(tableName).keyValueView(tableViewOptions));
         rViews.add(ignite.tables().table(tableName).recordView(tableViewOptions));
       } else {

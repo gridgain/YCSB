@@ -45,6 +45,7 @@ import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
+import org.apache.ignite.table.TableViewOptions;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.tx.TransactionOptions;
 import org.apache.logging.log4j.LogManager;

@@ -1,9 +1,8 @@
 package site.ycsb.db.gridgain9;
 
 import java.util.Properties;
-import org.apache.ignite.table.TableViewOptions; // GG9 only
-import org.apache.ignite.table.NearCacheOptions; // GG9 only
-import site.ycsb.db.ignite3.IgniteParam;
+import org.apache.ignite.table.TableViewOptions;
+import org.apache.ignite.table.NearCacheOptions;
 
 /**
  * Utility functions for GridGain 9 YCSB client.
@@ -16,16 +15,16 @@ public final class Utils {
   public static TableViewOptions parseTableViewOptions(Properties properties) {
     NearCacheOptions.Builder nearCacheOptionsBuilder = NearCacheOptions.builder();
 
-    if (IgniteParam.NEAR_CACHE_MAX_ENTRIES.getValue(properties) >= 0) {
-      nearCacheOptionsBuilder.maxEntries(IgniteParam.NEAR_CACHE_MAX_ENTRIES.getValue(properties));
+    if (GridGainParam.NEAR_CACHE_MAX_ENTRIES.getValue(properties) >= 0) {
+      nearCacheOptionsBuilder.maxEntries(GridGainParam.NEAR_CACHE_MAX_ENTRIES.getValue(properties));
     }
 
-    if (IgniteParam.NEAR_CACHE_EXPIRE_AFTER_ACCESS.getValue(properties) >= 0) {
-      nearCacheOptionsBuilder.expireAfterAccess(IgniteParam.NEAR_CACHE_EXPIRE_AFTER_ACCESS.getValue(properties));
+    if (GridGainParam.NEAR_CACHE_EXPIRE_AFTER_ACCESS.getValue(properties) >= 0) {
+      nearCacheOptionsBuilder.expireAfterAccess(GridGainParam.NEAR_CACHE_EXPIRE_AFTER_ACCESS.getValue(properties));
     }
 
-    if (IgniteParam.NEAR_CACHE_EXPIRE_AFTER_UPDATE.getValue(properties) >= 0) {
-      nearCacheOptionsBuilder.expireAfterUpdate(IgniteParam.NEAR_CACHE_EXPIRE_AFTER_UPDATE.getValue(properties));
+    if (GridGainParam.NEAR_CACHE_EXPIRE_AFTER_UPDATE.getValue(properties) >= 0) {
+      nearCacheOptionsBuilder.expireAfterUpdate(GridGainParam.NEAR_CACHE_EXPIRE_AFTER_UPDATE.getValue(properties));
     }
 
     return TableViewOptions.builder().nearCacheOptions(nearCacheOptionsBuilder.build()).build();

@@ -11,7 +11,6 @@ import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
 import site.ycsb.db.ignite3.IgniteClient;
-import site.ycsb.db.ignite3.IgniteParam;
 
 public class GridGainNearCacheClient extends IgniteClient {
   /** */
@@ -26,9 +25,7 @@ public class GridGainNearCacheClient extends IgniteClient {
   public void initProperties(Properties properties) throws DBException {
     super.initProperties(properties);
 
-    if (IgniteParam.ENABLE_NEAR_CACHE.getValue(properties)) {
-      tableViewOptions = Utils.parseTableViewOptions(properties);
-    }
+    tableViewOptions = Utils.parseTableViewOptions(properties);
   }
 
   @Override

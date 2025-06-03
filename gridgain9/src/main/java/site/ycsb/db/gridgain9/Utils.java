@@ -1,11 +1,12 @@
-package site.ycsb.db.ignite3;
+package site.ycsb.db.gridgain9;
 
 import java.util.Properties;
-import org.apache.ignite.table.TableViewOptions; // GG9 only!
-import org.apache.ignite.table.NearCacheOptions; // GG9 only!
+import org.apache.ignite.table.TableViewOptions;
+import org.apache.ignite.table.NearCacheOptions;
+import site.ycsb.db.ignite3.IgniteParam;
 
 /**
- * Utility functions for Ignite3 YCSB client.
+ * Utility functions for GridGain 9 YCSB client.
  */
 public final class Utils {
   private Utils() {

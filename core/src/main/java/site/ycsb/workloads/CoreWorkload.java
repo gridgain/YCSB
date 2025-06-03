@@ -151,6 +151,16 @@ public class CoreWorkload extends Workload {
   public static final String MIN_FIELD_LENGTH_PROPERTY_DEFAULT = "1";
 
   /**
+   * The name of the property for using VARCHAR type with limit.
+   */
+  public static final String USE_LIMITED_VARCHAR_PROPERTY = "uselimitedvarchar";
+
+  /**
+   * The default option for using VARCHAR type with limit.
+   */
+  public static final String USE_LIMITED_VARCHAR_PROPERTY_DEFAULT = "true";
+
+  /**
    * The name of a property that specifies the filename containing the field length histogram (only
    * used if fieldlengthdistribution is "histogram").
    */

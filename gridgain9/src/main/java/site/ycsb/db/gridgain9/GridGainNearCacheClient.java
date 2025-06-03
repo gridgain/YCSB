@@ -12,7 +12,6 @@ import site.ycsb.DBException;
 import site.ycsb.Status;
 import site.ycsb.db.ignite3.IgniteClient;
 import site.ycsb.db.ignite3.IgniteParam;
-import site.ycsb.db.ignite3.Utils;
 
 public class GridGainNearCacheClient extends IgniteClient {
   /** */

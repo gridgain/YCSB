@@ -92,6 +92,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected String fieldPrefix;
 
+  protected boolean useLimitedVarchar;
+
   protected long recordsCount;
 
   protected long batchSize;
@@ -283,6 +285,8 @@ public abstract class IgniteAbstractClient extends DB {
           CoreWorkload.FIELD_LENGTH_PROPERTY, CoreWorkload.FIELD_LENGTH_PROPERTY_DEFAULT));
       fieldPrefix = properties.getProperty(
           CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
+      useLimitedVarchar = Boolean.parseBoolean(properties.getProperty(
+          CoreWorkload.USE_LIMITED_VARCHAR_PROPERTY, CoreWorkload.USE_LIMITED_VARCHAR_PROPERTY_DEFAULT));
       indexCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.INDEX_COUNT_PROPERTY, CoreWorkload.INDEX_COUNT_PROPERTY_DEFAULT));
       indexType = properties.getProperty(CoreWorkload.INDEX_TYPE_PROPERTY, "");
@@ -404,7 +408,9 @@ public abstract class IgniteAbstractClient extends DB {
    * Prepare the creation table SQL line(s).
    */
   public List<String> createTablesSQL() {
-    String fieldType = String.format(" VARCHAR(%s)", fieldLength);
+    String fieldType = useLimitedVarchar
+        ? String.format(" VARCHAR(%s)", fieldLength)
+        : " VARCHAR";
 
     String fieldsSpecs = valueFields.stream()
         .map(e -> e + fieldType)

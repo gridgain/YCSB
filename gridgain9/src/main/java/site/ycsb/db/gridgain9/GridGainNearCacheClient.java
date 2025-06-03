@@ -46,17 +46,17 @@ public class GridGainNearCacheClient extends IgniteClient {
 
   @Override
   public Status delete(String table, String key) {
-    return super.delete(table, key);
+    return Status.NOT_IMPLEMENTED;
   }
 
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    return super.update(table, key, values);
+    return Status.NOT_IMPLEMENTED;
   }
 
   @Override
   public Status batchRead(String table, List<String> keys, List<Set<String>> fields, List<Map<String, ByteIterator>> results) {
-    return super.batchRead(table, keys, fields, results);
+    return Status.NOT_IMPLEMENTED;
   }
 
   @Override
@@ -66,11 +66,11 @@ public class GridGainNearCacheClient extends IgniteClient {
 
   @Override
   public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
-    return super.batchInsert(table, keys, values);
+    return Status.NOT_IMPLEMENTED;
   }
 
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
-    return super.insert(table, key, values);
+    return Status.NOT_IMPLEMENTED;
   }
 }

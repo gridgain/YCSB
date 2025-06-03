@@ -40,78 +40,9 @@ LICENSE file.
     <relativePath>../binding-parent</relativePath>
   </parent>
 
-  <artifactId>ignite3-binding</artifactId>
-  <name>Apache Ignite3</name>
+  <artifactId>gridgain9-binding</artifactId>
+  <name>GridGain 9</name>
   <packaging>jar</packaging>
-
-  <properties>
-    <maven.local.repo>${basedir}/../var/m2/repository</maven.local.repo>
-    <skipJDK9Tests>true</skipJDK9Tests>
-    <skipJDK10Tests>true</skipJDK10Tests>
-    <skipJDK11Tests>true</skipJDK11Tests>
-  </properties>
-
-  <profiles>
-    <profile>
-      <id>use-local-maven-repo</id>
-      <activation>
-        <file>
-          <exists>${maven.local.repo}</exists>
-        </file>
-      </activation>
-      <repositories>
-        <repository>
-          <id>ignite3-local-repo</id>
-          <url>file://${maven.local.repo}</url>
-        </repository>
-      </repositories>
-    </profile>
-    <profile>
-      <!-- Profile to run YCSB with external AI3 from IDE -->
-      <id>ignite3</id>
-      <dependencies>
-        <dependency>
-          <groupId>org.apache.ignite</groupId>
-          <artifactId>ignite-core</artifactId>
-          <version>${ignite3.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.ignite</groupId>
-          <artifactId>ignite-api</artifactId>
-          <version>${ignite3.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.ignite</groupId>
-          <artifactId>ignite-jdbc</artifactId>
-          <version>${ignite3.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.ignite</groupId>
-          <artifactId>ignite-client</artifactId>
-          <version>${ignite3.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.ignite</groupId>
-          <artifactId>ignite-runner</artifactId>
-          <version>${ignite3.version}</version>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <!-- Profile to run YCSB with external AI3 from IDE -->
-      <id>gridgain9</id>
-      <dependencies>
-        <!-- TBD or remove dependency -->
-        <dependency>
-          <groupId>org.gridgain</groupId>
-          <artifactId>gridgain-columnar</artifactId>
-          <version>${gridgain9.version}</version>
-          <scope>provided</scope>
-        </dependency>
-
-      </dependencies>
-    </profile>
-  </profiles>
 
   <repositories>
     <repository>
@@ -130,37 +61,44 @@ LICENSE file.
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-core</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-api</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-jdbc</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-client</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.ignite</groupId>
+      <groupId>org.gridgain</groupId>
       <artifactId>ignite-runner</artifactId>
-      <version>${ignite3.version}</version>
+      <version>${gridgain9.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.gridgain</groupId>
+      <artifactId>gridgain-columnar</artifactId>
+      <version>${gridgain9.version}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -174,6 +112,13 @@ LICENSE file.
     <dependency>
       <groupId>org.gridgain.ycsb</groupId>
       <artifactId>core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- GridGain 9 benchmarks extend benchmarks for Ignite 3 -->
+    <dependency>
+      <groupId>org.gridgain.ycsb</groupId>
+      <artifactId>ignite3-binding</artifactId>
       <version>${project.version}</version>
     </dependency>
 

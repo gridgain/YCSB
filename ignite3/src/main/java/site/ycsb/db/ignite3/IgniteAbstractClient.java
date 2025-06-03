@@ -45,7 +45,6 @@ import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
-import org.apache.ignite.table.TableViewOptions;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.tx.TransactionOptions;
 import org.apache.logging.log4j.LogManager;
@@ -197,11 +196,6 @@ public abstract class IgniteAbstractClient extends DB {
   protected static TransactionOptions txOptions;
 
   /**
-   * Options to initialize table views with Near Cache enabled.
-   */
-  protected static TableViewOptions tableViewOptions;
-
-  /**
    * Used to specify the number of test tables.
    * Table names will be formed from TABLENAME_PROPERTY_DEFAULT value with adding index at the end.
    */
@@ -271,10 +265,6 @@ public abstract class IgniteAbstractClient extends DB {
       txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
       tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
-      if (IgniteParam.ENABLE_NEAR_CACHE.getValue(properties)) {
-        tableViewOptions = Utils.parseTableViewOptions(properties);
-      }
-
       boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()
           || !nodesFilter.isEmpty() || useColumnar;
       zoneName = doCreateZone ? DEFAULT_ZONE_NAME : "";
@@ -300,6 +290,9 @@ public abstract class IgniteAbstractClient extends DB {
           tableNames.add(tableNamePrefix + i);
         }
       }
+
+      kvViews = new ArrayList<>(tableCount);
+      rViews = new ArrayList<>(tableCount);
 
       if (indexCount > fieldCount) {
         throw new DBException(String.format(
@@ -521,21 +514,10 @@ public abstract class IgniteAbstractClient extends DB {
   /**
    * Init Key-Value view and Record view lists.
    */
-  private void initViews() {
-    kvViews = new ArrayList<>(tableCount);
-    rViews = new ArrayList<>(tableCount);
-
+  protected void initViews() {
     for (String tableName : tableNames) {
-      // TODO: refactor this
-      if (tableViewOptions != null) {
-        LOG.info("Using KV view and Record view with Near Cache");
-
-        kvViews.add(ignite.tables().table(tableName).keyValueView(tableViewOptions));
-        rViews.add(ignite.tables().table(tableName).recordView(tableViewOptions));
-      } else {
-        kvViews.add(ignite.tables().table(tableName).keyValueView());
-        rViews.add(ignite.tables().table(tableName).recordView());
-      }
+      kvViews.add(ignite.tables().table(tableName).keyValueView());
+      rViews.add(ignite.tables().table(tableName).recordView());
     }
   }
 

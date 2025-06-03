@@ -84,6 +84,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected int fieldCount;
 
+  protected int fieldLength;
+
   protected int indexCount;
 
   protected String indexType;
@@ -277,6 +279,8 @@ public abstract class IgniteAbstractClient extends DB {
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
       fieldCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
+      fieldLength = Integer.parseInt(properties.getProperty(
+          CoreWorkload.FIELD_LENGTH_PROPERTY, CoreWorkload.FIELD_LENGTH_PROPERTY_DEFAULT));
       fieldPrefix = properties.getProperty(
           CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
       indexCount = Integer.parseInt(properties.getProperty(
@@ -400,8 +404,10 @@ public abstract class IgniteAbstractClient extends DB {
    * Prepare the creation table SQL line(s).
    */
   public List<String> createTablesSQL() {
+    String fieldType = String.format(" VARCHAR(%s)", fieldLength);
+
     String fieldsSpecs = valueFields.stream()
-        .map(e -> e + " VARCHAR")
+        .map(e -> e + fieldType)
         .collect(Collectors.joining(", "));
 
     String withZoneName = "";

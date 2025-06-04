@@ -33,10 +33,8 @@ public class GridGainNearCacheClient extends IgniteClient {
 
   @Override
   protected void initViews() {
-    super.initViews();
-
     for (String tableName : tableNames) {
-      LOG.info("Using KV view and Record view with Near Cache");
+      LOG.info("Using KV view and Record view with Near Cache for table {}", tableName);
 
       kvViews.add(ignite.tables().table(tableName).keyValueView(tableViewOptions));
       rViews.add(ignite.tables().table(tableName).recordView(tableViewOptions));

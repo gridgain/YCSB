@@ -77,4 +77,4 @@ To build the full distribution, with all database bindings:
 
 To build a single database binding:
 
-    mvn -pl site.ycsb:mongodb-binding -am clean package
+    mvn -pl org.gridgain.ycsb:ignite3-binding -am clean package

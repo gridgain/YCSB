@@ -134,6 +134,11 @@ LICENSE file.
 <!--      <artifactId>griddb-binding</artifactId>-->
 <!--      <version>${project.version}</version>-->
 <!--    </dependency>-->
+    <dependency>
+      <groupId>org.gridgain.ycsb</groupId>
+      <artifactId>gridgain9-binding</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 <!--    <dependency>-->
 <!--      <groupId>org.gridgain.ycsb</groupId>-->
 <!--      <artifactId>hbase1-binding</artifactId>-->

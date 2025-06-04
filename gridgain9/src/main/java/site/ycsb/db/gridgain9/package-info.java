@@ -16,7 +16,7 @@
  */
 
 /**
- * The YCSB binding for <a href="http://ignite.apache.org/">Ignite 3</a>.
+ * The YCSB binding for <a href="http://gridgain.com/">GridGain 9</a>.
  */
-package site.ycsb.db.ignite3;
+package site.ycsb.db.gridgain9;
 

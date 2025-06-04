@@ -12,6 +12,9 @@ import site.ycsb.DBException;
 import site.ycsb.Status;
 import site.ycsb.db.ignite3.IgniteClient;
 
+/**
+ * A benchmark with enabled GG9 Near Cache on KeyValueView.
+ */
 public class GridGainNearCacheClient extends IgniteClient {
   /** */
   private static final Logger LOG = LogManager.getLogger(GridGainNearCacheClient.class);
@@ -51,7 +54,8 @@ public class GridGainNearCacheClient extends IgniteClient {
   }
 
   @Override
-  public Status batchRead(String table, List<String> keys, List<Set<String>> fields, List<Map<String, ByteIterator>> results) {
+  public Status batchRead(String table, List<String> keys, List<Set<String>> fields, List<Map<String,
+      ByteIterator>> results) {
     return Status.NOT_IMPLEMENTED;
   }
 

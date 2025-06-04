@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * GridGain 9 client parameter.
+ * GridGain 9 client parameters.
  *
  * @param <T> Parameter value type.
  */

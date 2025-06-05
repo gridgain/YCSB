@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.ignite.table.TableViewOptions;
+import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
@@ -59,7 +60,22 @@ public class GridGainNearCacheClient extends IgniteClient {
 
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
-    return super.read(table, key, fields, result);
+    try {
+      Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
+
+      // Explicit transactions with NearCache are not supported.
+      Tuple tValue = getKvView(key).get(null, tKey);
+
+      if (tValue == null) {
+        return Status.NOT_FOUND;
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error("Error reading key: {}", key, e);
+
+      return Status.ERROR;
+    }
   }
 
   @Override

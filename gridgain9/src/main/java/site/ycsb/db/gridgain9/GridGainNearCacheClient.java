@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.TableViewOptions;
 import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
@@ -21,6 +22,11 @@ public class GridGainNearCacheClient extends IgniteClient {
   private static final Logger LOG = LogManager.getLogger(GridGainNearCacheClient.class);
 
   /**
+   * We use 'static' here so all workload threads use the same view with the same Near Cache.
+   */
+  protected static KeyValueView<Tuple, Tuple> kvView;
+
+  /**
    * Options to initialize table views with Near Cache enabled.
    */
   protected static TableViewOptions tableViewOptions;
@@ -30,16 +36,8 @@ public class GridGainNearCacheClient extends IgniteClient {
     super.initProperties(properties);
 
     tableViewOptions = Utils.parseTableViewOptions(properties);
-  }
 
-  @Override
-  protected void initViews() {
-    for (String tableName : tableNames) {
-      LOG.info("Using KV view and Record view with Near Cache for table {}", tableName);
-
-      kvViews.add(ignite.tables().table(tableName).keyValueView(tableViewOptions));
-      rViews.add(ignite.tables().table(tableName).recordView(tableViewOptions));
-    }
+    kvView = ignite.tables().table(tableNames.get(0)).keyValueView(tableViewOptions);
   }
 
   @Override
@@ -64,7 +62,7 @@ public class GridGainNearCacheClient extends IgniteClient {
       Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
 
       // Explicit transactions with NearCache are not supported.
-      Tuple tValue = getKvView(key).get(null, tKey);
+      Tuple tValue = kvView.get(null, tKey);
 
       if (tValue == null) {
         return Status.NOT_FOUND;

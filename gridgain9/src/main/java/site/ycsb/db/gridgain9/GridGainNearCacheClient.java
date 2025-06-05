@@ -2,7 +2,6 @@ package site.ycsb.db.gridgain9;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.TableViewOptions;

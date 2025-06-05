@@ -107,9 +107,15 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected String hosts;
 
-  protected List<KeyValueView<Tuple, Tuple>> kvViews;
+  /**
+   * We declare this as static to share views between several workload threads.
+   */
+  protected static List<KeyValueView<Tuple, Tuple>> kvViews;
 
-  protected List<RecordView<Tuple>> rViews;
+  /**
+   * We declare this as static to share viewsbetween several workload threads.
+   */
+  protected static List<RecordView<Tuple>> rViews;
 
   /**
    * Count the number of times initialized to teardown on the last

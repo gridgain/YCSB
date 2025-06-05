@@ -12,12 +12,12 @@ import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
-import site.ycsb.db.ignite3.IgniteClient;
+import site.ycsb.db.ignite3.IgniteAbstractClient;
 
 /**
- * A benchmark with enabled GG9 Near Cache on KeyValueView.
+ * A benchmark with enabled GG9 Near Cache on KeyValueView of a single table.
  */
-public class GridGainNearCacheClient extends IgniteClient {
+public class GridGainNearCacheClient extends IgniteAbstractClient {
   /** */
   private static final Logger LOG = LogManager.getLogger(GridGainNearCacheClient.class);
 
@@ -32,10 +32,10 @@ public class GridGainNearCacheClient extends IgniteClient {
   protected static TableViewOptions tableViewOptions;
 
   @Override
-  public void initProperties(Properties properties) throws DBException {
-    super.initProperties(properties);
+  public void init() throws DBException {
+    super.init();
 
-    tableViewOptions = Utils.parseTableViewOptions(properties);
+    tableViewOptions = Utils.parseTableViewOptions(getProperties());
 
     kvView = ignite.tables().table(tableNames.get(0)).keyValueView(tableViewOptions);
   }

@@ -111,15 +111,9 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected String hosts;
 
-  /**
-   * We declare this as static to share views between several workload threads.
-   */
-  protected static List<KeyValueView<Tuple, Tuple>> kvViews;
+  protected List<KeyValueView<Tuple, Tuple>> kvViews;
 
-  /**
-   * We declare this as static to share viewsbetween several workload threads.
-   */
-  protected static List<RecordView<Tuple>> rViews;
+  protected List<RecordView<Tuple>> rViews;
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -304,9 +298,6 @@ public abstract class IgniteAbstractClient extends DB {
           tableNames.add(tableNamePrefix + i);
         }
       }
-
-      kvViews = new ArrayList<>(tableCount);
-      rViews = new ArrayList<>(tableCount);
 
       if (indexCount > fieldCount) {
         throw new DBException(String.format(
@@ -532,7 +523,10 @@ public abstract class IgniteAbstractClient extends DB {
   /**
    * Init Key-Value view and Record view lists.
    */
-  protected void initViews() {
+  private void initViews() {
+    kvViews = new ArrayList<>(tableCount);
+    rViews = new ArrayList<>(tableCount);
+
     for (String tableName : tableNames) {
       kvViews.add(ignite.tables().table(tableName).keyValueView());
       rViews.add(ignite.tables().table(tableName).recordView());

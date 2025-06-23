@@ -17,14 +17,14 @@
 
 package site.ycsb.measurements;
 
-import java.util.ArrayList;
-import java.util.List;
+import site.ycsb.measurements.exporter.MeasurementsExporter;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
-import site.ycsb.measurements.exporter.MeasurementsExporter;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -134,10 +134,11 @@ public class OneMeasurementTimeSeries extends OneMeasurement {
     // accumulate the last interval which was not caught by status thread
     Histogram intervalHistogram = getIntervalHistogramAndAccumulate();
 
-    exporter.write(getName(), "Operations", operations);
-    exporter.write(getName(), "AverageLatency(us)", (((double) totallatency) / ((double) operations)));
-    exporter.write(getName(), "MinLatency(us)", min);
-    exporter.write(getName(), "MaxLatency(us)", max);
+    exporter.write(getName(), "Operations", totalHistogram.getTotalCount());
+    exporter.write(getName(), "AvgLatency(us)", totalHistogram.getMean());
+    exporter.write(getName(), "StdDevLatency(us)", totalHistogram.getStdDeviation());
+    exporter.write(getName(), "MinLatency(us)", totalHistogram.getMinValue());
+    exporter.write(getName(), "MaxLatency(us)", totalHistogram.getMaxValue());
 
     for (Double percentile : percentiles) {
       exporter.write(getName(), ordinal(percentile) + "PercentileLatency(us)",

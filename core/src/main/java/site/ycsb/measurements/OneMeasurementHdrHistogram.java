@@ -114,7 +114,8 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
       log.close();
     }
     exporter.write(getName(), "Operations", totalHistogram.getTotalCount());
-    exporter.write(getName(), "AverageLatency(us)", totalHistogram.getMean());
+    exporter.write(getName(), "AvgLatency(us)", totalHistogram.getMean());
+    exporter.write(getName(), "StdDevLatency(us)", totalHistogram.getStdDeviation());
     exporter.write(getName(), "MinLatency(us)", totalHistogram.getMinValue());
     exporter.write(getName(), "MaxLatency(us)", totalHistogram.getMaxValue());
 
@@ -156,12 +157,16 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
     }
 
     DecimalFormat d = new DecimalFormat("#.##");
-    return "[" + getName() + ": Count=" + intervalHistogram.getTotalCount() + ", Max="
-        + intervalHistogram.getMaxValue() + ", Min=" + intervalHistogram.getMinValue() + ", Avg="
-        + d.format(intervalHistogram.getMean()) + ", 90=" + d.format(intervalHistogram.getValueAtPercentile(90))
-        + ", 99=" + d.format(intervalHistogram.getValueAtPercentile(99)) + ", 99.9="
-        + d.format(intervalHistogram.getValueAtPercentile(99.9)) + ", 99.99="
-        + d.format(intervalHistogram.getValueAtPercentile(99.99)) + "]";
+    return "[" + getName() + ": "
+        + "Count=" + intervalHistogram.getTotalCount() + ", "
+        + "Max=" + intervalHistogram.getMaxValue() + ", "
+        + "Min=" + intervalHistogram.getMinValue() + ", "
+        + "Avg=" + d.format(intervalHistogram.getMean()) + ", "
+        + "StdDev=" + d.format(intervalHistogram.getStdDeviation()) + ", "
+        + "90=" + d.format(intervalHistogram.getValueAtPercentile(90)) + ", "
+        + "99=" + d.format(intervalHistogram.getValueAtPercentile(99)) + ", "
+        + "99.9=" + d.format(intervalHistogram.getValueAtPercentile(99.9)) + ", "
+        + "99.99=" + d.format(intervalHistogram.getValueAtPercentile(99.99)) + "]";
   }
 
   private Histogram getIntervalHistogramAndAccumulate() {

@@ -16,6 +16,8 @@
  */
 package site.ycsb.db.ignite3;
 
+import static site.ycsb.Client.parseLongWithModifiers;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ import org.apache.ignite.table.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
+import site.ycsb.Client;
 import site.ycsb.DBException;
 import site.ycsb.Status;
 
@@ -48,10 +51,16 @@ public class IgniteStreamerClient extends IgniteAbstractClient {
   /** List of record view data streamer completable futures. */
   protected List<CompletableFuture<Void>> rvStreamerFutures;
 
+  /** Batch size. */
+  protected long batchSize;
+
   /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
     super.init();
+
+    batchSize = parseLongWithModifiers(getProperties().getProperty(
+        Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
 
     DataStreamerOptions dsOptions = DataStreamerOptions.builder()
         .pageSize((int) batchSize)

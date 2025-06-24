@@ -64,7 +64,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      BinaryObject binObj = cache.get(key);
+      BinaryObject binObj = getCache(key).get(key);
 
       return convert(binObj, fields, result);
     } catch (Exception e) {
@@ -79,7 +79,7 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
                           List<Map<String, ByteIterator>> results) {
     try {
-      Map<String, BinaryObject> map = cache.getAll(new HashSet<>(keys));
+      Map<String, BinaryObject> map = getCache(keys.get(0)).getAll(new HashSet<>(keys));
 
       for (int i = 0; i < keys.size(); i++) {
         BinaryObject binObj = map.get(keys.get(i));
@@ -107,7 +107,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
-      cache.invoke(key, new Updater(values));
+      getCache(key).invoke(key, new Updater(values));
 
       return Status.OK;
     } catch (Exception e) {
@@ -123,7 +123,7 @@ public class IgniteClient extends IgniteAbstractClient {
     try {
       BinaryObject binObj = convert(values);
 
-      cache.put(key, binObj);
+      getCache(key).put(key, binObj);
 
       return Status.OK;
     } catch (Exception e) {
@@ -145,7 +145,7 @@ public class IgniteClient extends IgniteAbstractClient {
         map.put(keys.get(i), binObj);
       }
 
-      cache.putAll(map);
+      getCache(keys.get(0)).putAll(map);
 
       return Status.OK;
     } catch (Exception e) {
@@ -159,7 +159,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      cache.remove(key);
+      getCache(key).remove(key);
 
       return Status.OK;
     } catch (Exception e) {

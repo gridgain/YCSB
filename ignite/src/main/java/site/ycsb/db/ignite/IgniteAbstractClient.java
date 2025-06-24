@@ -71,10 +71,6 @@ public abstract class IgniteAbstractClient extends DB {
   protected static final String PRIMARY_COLUMN_NAME = "ycsb_key";
   protected static final String HOSTS_PROPERTY = "hosts";
   protected static final String CLIENT_NODE_NAME = "YCSB client node";
-  protected static final String TX_CONCURRENCY_PROPERTY = "txconcurrency";
-  protected static final String TX_CONCURRENCY_DEFAULT = "pessimistic";
-  protected static final String TX_ISOLATION_PROPERTY = "txisolation";
-  protected static final String TX_ISOLATION_DEFAULT = "serializable";
   protected static final List<String> FIELDS = new ArrayList<>();
   protected static final Set<String> ACCESS_METHODS =
       new HashSet<>(Arrays.asList("kv", "sql", "jdbc", "txkv", "txsql", "txjdbc"));
@@ -93,7 +89,7 @@ public abstract class IgniteAbstractClient extends DB {
   protected static Ignite ignite = null;
 
   /** Ignite cache to store key-values. */
-  protected static IgniteCache<String, BinaryObject> cache = null;
+  protected static List<IgniteCache<String, BinaryObject>> caches;
 
   /** Debug flag. */
   protected static boolean debug = false;
@@ -106,7 +102,15 @@ public abstract class IgniteAbstractClient extends DB {
   /** Start an embedded Ignite node instead of connecting to an external one. */
   protected static boolean useEmbeddedIgnite = false;
 
-  protected static String cacheName;
+  protected static String tableNamePrefix;
+
+  protected static List<String> tableNames;
+
+  /**
+   * Used to specify the number of test tables.
+   * Table names will be formed from TABLENAME_PROPERTY_DEFAULT value with adding index at the end.
+   */
+  protected static int tableCount;
 
   protected static int fieldCount;
 
@@ -164,7 +168,7 @@ public abstract class IgniteAbstractClient extends DB {
 
       initIgnite();
 
-      initTestCache();
+      initTestCaches();
 
       createIndexes();
 
@@ -182,28 +186,40 @@ public abstract class IgniteAbstractClient extends DB {
       debug = Boolean.parseBoolean(properties.getProperty("debug", "false"));
       shutdownExternalIgnite = Boolean.parseBoolean(properties.getProperty("shutdownIgnite", "false"));
       useEmbeddedIgnite = Boolean.parseBoolean(properties.getProperty("useEmbedded", "false"));
-      cacheName = properties.getProperty(CoreWorkload.TABLENAME_PROPERTY,
-          CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
+
+      tableNamePrefix = properties.getProperty(
+          CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
+      tableCount = Ignite2Param.TABLE_COUNT.getValue(properties);
+
+      if (tableCount <= 1) {
+        tableNames.add(tableNamePrefix);
+      } else {
+        for (int i = 0; i < tableCount; i++) {
+          tableNames.add(tableNamePrefix + i);
+        }
+      }
+
       fieldCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
-      fieldPrefix = properties.getProperty(CoreWorkload.FIELD_NAME_PREFIX,
-          CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
+      fieldPrefix = properties.getProperty(
+          CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
+
+      for (int i = 0; i < fieldCount; i++) {
+        FIELDS.add(fieldPrefix + i);
+      }
+
       indexCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.INDEX_COUNT_PROPERTY, CoreWorkload.INDEX_COUNT_PROPERTY_DEFAULT));
       indexOptions = properties.getProperty(CoreWorkload.INDEX_OPTIONS_PROPERTY, "");
-      String txConcurrencyStr = properties.getProperty(TX_CONCURRENCY_PROPERTY, TX_CONCURRENCY_DEFAULT);
+      String txConcurrencyStr = Ignite2Param.TX_CONCURRENCY.getValue(properties);
       txConcurrency = TransactionConcurrency.valueOf(txConcurrencyStr.trim().toUpperCase());
-      String txIsolationStr = properties.getProperty(TX_ISOLATION_PROPERTY, TX_ISOLATION_DEFAULT);
+      String txIsolationStr = Ignite2Param.TX_ISOLATION.getValue(properties);
       txIsolation = TransactionIsolation.valueOf(txIsolationStr.trim().toUpperCase());
 
       if (indexCount > fieldCount) {
         throw new DBException(String.format(
             "Indexed fields count (%s=%s) should be less or equal to fields count (%s=%s)",
             CoreWorkload.INDEX_COUNT_PROPERTY, indexCount, CoreWorkload.FIELD_COUNT_PROPERTY, fieldCount));
-      }
-
-      for (int i = 0; i < fieldCount; i++) {
-        FIELDS.add(fieldPrefix + i);
       }
     } catch (Exception e) {
       throw new DBException(e);
@@ -233,13 +249,19 @@ public abstract class IgniteAbstractClient extends DB {
   }
 
   /**
-   * Init test cache.
+   * Init test caches.
    */
-  private void initTestCache() throws DBException {
-    cache = ignite.cache(cacheName).withKeepBinary();
+  private void initTestCaches() throws DBException {
+    caches = new ArrayList<>(tableCount);
 
-    if (cache == null) {
-      throw new DBException(new IgniteCheckedException("Failed to find cache " + cacheName));
+    for (String tableName : tableNames) {
+      IgniteCache<String, BinaryObject> cache = ignite.cache(tableName).withKeepBinary();
+
+      if (cache == null) {
+        throw new DBException(new IgniteCheckedException("Failed to find cache " + tableName));
+      }
+
+      caches.add(cache);
     }
   }
 
@@ -313,7 +335,7 @@ public abstract class IgniteAbstractClient extends DB {
       createIndexesReqs.forEach(idxReq -> {
           LOG.info("SQL line: {}", idxReq);
 
-          cache.query(new SqlFieldsQuery(idxReq)).getAll();
+          caches.get(0).query(new SqlFieldsQuery(idxReq)).getAll();
         });
     }
   }
@@ -330,9 +352,23 @@ public abstract class IgniteAbstractClient extends DB {
 
     FIELDS.subList(0, indexCount).forEach(field ->
         createIndexesReqs.add(
-            String.format("CREATE INDEX IF NOT EXISTS idx_%s ON %s (%s)%s;", field, cacheName, field, indexOptions)));
+            String.format("CREATE INDEX IF NOT EXISTS idx_%s ON %s (%s)%s;",
+                field, tableNamePrefix, field, indexOptions)));
 
     return createIndexesReqs;
+  }
+
+  /**
+   * Get cache for key.
+   *
+   * @param key Key.
+   */
+  protected IgniteCache<String, BinaryObject> getCache(String key) {
+    int index = tableCount <= 1 ?
+        0 : //skip the key processing for choosing view in case of 1 test table
+        (int) (Long.parseLong(key.substring(4)) % tableCount); //CoreWorkload uses key hash with prefix "user"
+
+    return caches.get(index);
   }
 
   /**

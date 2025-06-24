@@ -47,7 +47,7 @@ public final class Ignite3Param<T> {
       new Ignite3Param<>("txreadonly", false, Boolean::parseBoolean);
 
   public static final Ignite3Param<Integer> TABLE_COUNT =
-      new Ignite3Param<>("tablecount", 1, Integer::parseInt);
+      new Ignite3Param<>("tablecount", 2, Integer::parseInt);
 
   public static final Ignite3Param<String> WORK_DIR =
       new Ignite3Param<>("workDir", "../ignite3-ycsb-work/" + System.currentTimeMillis(), s -> s);

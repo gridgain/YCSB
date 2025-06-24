@@ -176,7 +176,8 @@ public class IgniteClient extends IgniteAbstractClient {
     Tuple tValue = Tuple.create(fieldCount);
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
-    getKvView(key).put(tx, tKey, tValue);
+    kvViews.get(0).put(tx, tKey, tValue);
+    kvViews.get(1).put(tx, tKey, tValue);
   }
 
   /**
@@ -190,7 +191,8 @@ public class IgniteClient extends IgniteAbstractClient {
   @NotNull
   protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    Tuple tValue = getKvView(key).get(tx, tKey);
+    Tuple tValue = kvViews.get(0).get(tx, tKey);
+    kvViews.get(1).get(tx, tKey);
 
     if (tValue == null) {
       return Status.NOT_FOUND;

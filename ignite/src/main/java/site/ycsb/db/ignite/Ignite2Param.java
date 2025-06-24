@@ -17,7 +17,7 @@ public final class Ignite2Param<T> {
       new Ignite2Param<>("txisolation", "serializable", s -> s);
 
   public static final Ignite2Param<Integer> TABLE_COUNT =
-      new Ignite2Param<>("tablecount", 1, Integer::parseInt);
+      new Ignite2Param<>("tablecount", 2, Integer::parseInt);
 
   /**
    * Parameter name.

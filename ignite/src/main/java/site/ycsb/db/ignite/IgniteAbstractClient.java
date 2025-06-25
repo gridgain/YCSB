@@ -104,7 +104,7 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static String tableNamePrefix;
 
-  protected static List<String> tableNames;
+  protected static List<String> tableNames = new ArrayList<>();
 
   /**
    * Used to specify the number of test tables.

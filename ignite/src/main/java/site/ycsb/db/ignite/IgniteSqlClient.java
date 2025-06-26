@@ -205,7 +205,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
     SqlFieldsQuery qry = new SqlFieldsQuery(sb.toString());
     qry.setArgs(insertData.getArgs());
 
-    cache.query(qry).getAll();
+    getCache(key).query(qry).getAll();
   }
 
   /**
@@ -224,7 +224,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
     SqlFieldsQuery qry = new SqlFieldsQuery(sb.toString());
     qry.setArgs(key);
 
-    FieldsQueryCursor<List<?>> cur = cache.query(qry);
+    FieldsQueryCursor<List<?>> cur = getCache(key).query(qry);
     Iterator<List<?>> it = cur.iterator();
 
     if (!it.hasNext()) {
@@ -281,7 +281,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
     SqlFieldsQuery qry = new SqlFieldsQuery(sb.toString());
     qry.setArgs(updData.getArgs());
 
-    cache.query(qry).getAll();
+    getCache(key).query(qry).getAll();
   }
 
   /**
@@ -296,6 +296,6 @@ public class IgniteSqlClient extends IgniteAbstractClient {
 
     SqlFieldsQuery qry = new SqlFieldsQuery(sb.toString());
     qry.setArgs(key);
-    cache.query(qry).getAll();
+    getCache(key).query(qry).getAll();
   }
 }

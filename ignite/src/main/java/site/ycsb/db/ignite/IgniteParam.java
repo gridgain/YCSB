@@ -9,15 +9,15 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param <T> Parameter value type.
  */
-public final class Ignite2Param<T> {
-  public static final Ignite2Param<String> TX_CONCURRENCY =
-      new Ignite2Param<>("txconcurrency", "pessimistic", s -> s);
+public final class IgniteParam<T> {
+  public static final IgniteParam<String> TX_CONCURRENCY =
+      new IgniteParam<>("txconcurrency", "pessimistic", s -> s);
 
-  public static final Ignite2Param<String> TX_ISOLATION =
-      new Ignite2Param<>("txisolation", "serializable", s -> s);
+  public static final IgniteParam<String> TX_ISOLATION =
+      new IgniteParam<>("txisolation", "serializable", s -> s);
 
-  public static final Ignite2Param<Integer> TABLE_COUNT =
-      new Ignite2Param<>("tablecount", 1, Integer::parseInt);
+  public static final IgniteParam<Integer> TABLE_COUNT =
+      new IgniteParam<>("tablecount", 1, Integer::parseInt);
 
   /**
    * Parameter name.
@@ -44,7 +44,7 @@ public final class Ignite2Param<T> {
    * @param defaultValue Default value for parameter.
    * @param parser Parsing function to get parameter value from property.
    */
-  private Ignite2Param(@NotNull String parameter, @NotNull T defaultValue, @NotNull Function<String, T> parser) {
+  private IgniteParam(@NotNull String parameter, @NotNull T defaultValue, @NotNull Function<String, T> parser) {
     this.parameter = parameter;
     this.defaultValue = defaultValue;
     this.parser = parser;

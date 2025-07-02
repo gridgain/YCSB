@@ -189,7 +189,7 @@ public abstract class IgniteAbstractClient extends DB {
 
       tableNamePrefix = properties.getProperty(
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
-      tableCount = Ignite2Param.TABLE_COUNT.getValue(properties);
+      tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
       if (tableCount <= 1) {
         tableNames.add(tableNamePrefix);
@@ -211,9 +211,9 @@ public abstract class IgniteAbstractClient extends DB {
       indexCount = Integer.parseInt(properties.getProperty(
           CoreWorkload.INDEX_COUNT_PROPERTY, CoreWorkload.INDEX_COUNT_PROPERTY_DEFAULT));
       indexOptions = properties.getProperty(CoreWorkload.INDEX_OPTIONS_PROPERTY, "");
-      String txConcurrencyStr = Ignite2Param.TX_CONCURRENCY.getValue(properties);
+      String txConcurrencyStr = IgniteParam.TX_CONCURRENCY.getValue(properties);
       txConcurrency = TransactionConcurrency.valueOf(txConcurrencyStr.trim().toUpperCase());
-      String txIsolationStr = Ignite2Param.TX_ISOLATION.getValue(properties);
+      String txIsolationStr = IgniteParam.TX_ISOLATION.getValue(properties);
       txIsolation = TransactionIsolation.valueOf(txIsolationStr.trim().toUpperCase());
 
       if (indexCount > fieldCount) {

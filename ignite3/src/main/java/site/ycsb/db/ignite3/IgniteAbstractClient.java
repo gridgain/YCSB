@@ -243,25 +243,25 @@ public abstract class IgniteAbstractClient extends DB {
    */
   public void initProperties(Properties properties) throws DBException {
     try {
-      debug = Ignite3Param.DEBUG.getValue(properties);
+      debug = IgniteParam.DEBUG.getValue(properties);
       isRunPhase = Boolean.parseBoolean(properties.getProperty(DO_TRANSACTIONS_PROPERTY, "true"));
-      shutdownExternalIgnite = Ignite3Param.SHUTDOWN_IGNITE.getValue(properties);
-      useEmbeddedIgnite = Ignite3Param.USE_EMBEDDED.getValue(properties);
-      disableFsync = Ignite3Param.DISABLE_FSYNC.getValue(properties);
-      txOptions = new TransactionOptions().readOnly(Ignite3Param.TX_READ_ONLY.getValue(properties));
-      dbEngine = Ignite3Param.DB_ENGINE.getValue(properties);
-      storageProfile = Ignite3Param.STORAGE_PROFILES.getValue(properties);
-      secondaryStorageProfile = Ignite3Param.SECONDARY_STORAGE_PROFILE.getValue(properties);
+      shutdownExternalIgnite = IgniteParam.SHUTDOWN_IGNITE.getValue(properties);
+      useEmbeddedIgnite = IgniteParam.USE_EMBEDDED.getValue(properties);
+      disableFsync = IgniteParam.DISABLE_FSYNC.getValue(properties);
+      txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
+      dbEngine = IgniteParam.DB_ENGINE.getValue(properties);
+      storageProfile = IgniteParam.STORAGE_PROFILES.getValue(properties);
+      secondaryStorageProfile = IgniteParam.SECONDARY_STORAGE_PROFILE.getValue(properties);
 
       // backward compatibility of setting 'dbEngine' as storage engine name only.
       if (storageProfile.isEmpty() && !dbEngine.isEmpty()) {
         storageProfile = dbEngine;
       }
 
-      replicas = Ignite3Param.REPLICAS.getValue(properties);
-      partitions = Ignite3Param.PARTITIONS.getValue(properties);
-      nodesFilter = Ignite3Param.NODES_FILTER.getValue(properties);
-      useColumnar = Ignite3Param.USE_COLUMNAR.getValue(properties);
+      replicas = IgniteParam.REPLICAS.getValue(properties);
+      partitions = IgniteParam.PARTITIONS.getValue(properties);
+      nodesFilter = IgniteParam.NODES_FILTER.getValue(properties);
+      useColumnar = IgniteParam.USE_COLUMNAR.getValue(properties);
 
       boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()
           || !nodesFilter.isEmpty() || useColumnar;
@@ -269,7 +269,7 @@ public abstract class IgniteAbstractClient extends DB {
 
       tableNamePrefix = properties.getProperty(
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
-      tableCount = Ignite3Param.TABLE_COUNT.getValue(properties);
+      tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
       if (tableCount <= 1) {
         tableNames.add(tableNamePrefix);
@@ -279,7 +279,7 @@ public abstract class IgniteAbstractClient extends DB {
         }
       }
 
-      String workDirProperty = Ignite3Param.WORK_DIR.getValue(properties);
+      String workDirProperty = IgniteParam.WORK_DIR.getValue(properties);
       embeddedIgniteWorkDir = Paths.get(workDirProperty);
 
       fieldCount = Integer.parseInt(properties.getProperty(

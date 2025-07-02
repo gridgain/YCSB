@@ -47,7 +47,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      BinaryObject binObj = cache.get(key);
+      BinaryObject binObj = getCache(key).get(key);
 
       tx.commit();
 
@@ -81,7 +81,7 @@ public class IgniteTxKvClient extends IgniteClient {
       txStart();
 
       for (int i = 0; i < keys.size(); i++) {
-        BinaryObject binObj = cache.get(keys.get(i));
+        BinaryObject binObj = getCache(keys.get(i)).get(keys.get(i));
 
         Map<String, ByteIterator> record = new HashMap<>();
 
@@ -124,7 +124,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      cache.invoke(key, new IgniteClient.Updater(values));
+      getCache(key).invoke(key, new IgniteClient.Updater(values));
 
       tx.commit();
 
@@ -158,7 +158,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       BinaryObject binObj = convert(values);
 
-      cache.put(key, binObj);
+      getCache(key).put(key, binObj);
 
       tx.commit();
 
@@ -193,7 +193,7 @@ public class IgniteTxKvClient extends IgniteClient {
       for (int i = 0; i < keys.size(); i++) {
         BinaryObject binObj = convert(values.get(i));
 
-        cache.put(keys.get(i), binObj);
+        getCache(keys.get(i)).put(keys.get(i), binObj);
       }
 
       tx.commit();
@@ -226,7 +226,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      cache.remove(key);
+      getCache(key).remove(key);
 
       tx.commit();
 

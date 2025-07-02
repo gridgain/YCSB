@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Ignite client parameter.
+ * Ignite 3 client parameter.
  *
  * @param <T> Parameter value type.
  */

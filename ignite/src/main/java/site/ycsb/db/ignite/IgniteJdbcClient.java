@@ -133,7 +133,8 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
         return;
       }
 
-      readPreparedStatementString = String.format("SELECT * FROM %s WHERE %s = ?", cacheName, PRIMARY_COLUMN_NAME);
+      readPreparedStatementString = String.format("SELECT * FROM %s WHERE %s = ?",
+          tableNamePrefix, PRIMARY_COLUMN_NAME);
 
       List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
       columns.addAll(FIELDS);
@@ -143,9 +144,10 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
       String valuesString = String.join(", ", Collections.nCopies(columns.size(), "?"));
 
       insertPreparedStatementString = String.format("INSERT INTO %s (%s) VALUES (%s)",
-          cacheName, columnsString, valuesString);
+          tableNamePrefix, columnsString, valuesString);
 
-      deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?", cacheName, PRIMARY_COLUMN_NAME);
+      deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?",
+          tableNamePrefix, PRIMARY_COLUMN_NAME);
     }
   }
 
@@ -312,7 +314,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
       }
 
       String sql = String.format("UPDATE %s SET %s WHERE %s = '%s'",
-          cacheName, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
+          tableNamePrefix, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
 
       stmt.executeUpdate(sql);
     }

@@ -18,7 +18,6 @@
 package site.ycsb.db.ignite3;
 
 import static site.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
-import static site.ycsb.Client.parseLongWithModifiers;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -50,7 +49,6 @@ import org.apache.ignite.tx.TransactionOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
-import site.ycsb.Client;
 import site.ycsb.DB;
 import site.ycsb.DBException;
 import site.ycsb.Status;
@@ -93,10 +91,6 @@ public abstract class IgniteAbstractClient extends DB {
   protected String fieldPrefix;
 
   protected boolean useLimitedVarchar;
-
-  protected long recordsCount;
-
-  protected long batchSize;
 
   protected final List<String> valueFields = new ArrayList<>();
 
@@ -250,12 +244,13 @@ public abstract class IgniteAbstractClient extends DB {
   public void initProperties(Properties properties) throws DBException {
     try {
       debug = IgniteParam.DEBUG.getValue(properties);
+      isRunPhase = Boolean.parseBoolean(properties.getProperty(DO_TRANSACTIONS_PROPERTY, "true"));
       shutdownExternalIgnite = IgniteParam.SHUTDOWN_IGNITE.getValue(properties);
       useEmbeddedIgnite = IgniteParam.USE_EMBEDDED.getValue(properties);
       disableFsync = IgniteParam.DISABLE_FSYNC.getValue(properties);
+      txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
       dbEngine = IgniteParam.DB_ENGINE.getValue(properties);
       storageProfile = IgniteParam.STORAGE_PROFILES.getValue(properties);
-      useColumnar = IgniteParam.USE_COLUMNAR.getValue(properties);
       secondaryStorageProfile = IgniteParam.SECONDARY_STORAGE_PROFILE.getValue(properties);
 
       // backward compatibility of setting 'dbEngine' as storage engine name only.
@@ -266,30 +261,15 @@ public abstract class IgniteAbstractClient extends DB {
       replicas = IgniteParam.REPLICAS.getValue(properties);
       partitions = IgniteParam.PARTITIONS.getValue(properties);
       nodesFilter = IgniteParam.NODES_FILTER.getValue(properties);
-      txOptions = new TransactionOptions().readOnly(IgniteParam.TX_READ_ONLY.getValue(properties));
-      tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
+      useColumnar = IgniteParam.USE_COLUMNAR.getValue(properties);
 
       boolean doCreateZone = !storageProfile.isEmpty() || !replicas.isEmpty() || !partitions.isEmpty()
           || !nodesFilter.isEmpty() || useColumnar;
       zoneName = doCreateZone ? DEFAULT_ZONE_NAME : "";
 
-      String workDirProperty = IgniteParam.WORK_DIR.getValue(properties);
-      embeddedIgniteWorkDir = Paths.get(workDirProperty);
-
-      isRunPhase = Boolean.parseBoolean(properties.getProperty(DO_TRANSACTIONS_PROPERTY, "true"));
       tableNamePrefix = properties.getProperty(
           CoreWorkload.TABLENAME_PROPERTY, CoreWorkload.TABLENAME_PROPERTY_DEFAULT);
-      fieldCount = Integer.parseInt(properties.getProperty(
-          CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
-      fieldLength = Integer.parseInt(properties.getProperty(
-          CoreWorkload.FIELD_LENGTH_PROPERTY, CoreWorkload.FIELD_LENGTH_PROPERTY_DEFAULT));
-      fieldPrefix = properties.getProperty(
-          CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
-      useLimitedVarchar = Boolean.parseBoolean(properties.getProperty(
-          CoreWorkload.USE_LIMITED_VARCHAR_PROPERTY, CoreWorkload.USE_LIMITED_VARCHAR_PROPERTY_DEFAULT));
-      indexCount = Integer.parseInt(properties.getProperty(
-          CoreWorkload.INDEX_COUNT_PROPERTY, CoreWorkload.INDEX_COUNT_PROPERTY_DEFAULT));
-      indexType = properties.getProperty(CoreWorkload.INDEX_TYPE_PROPERTY, "");
+      tableCount = IgniteParam.TABLE_COUNT.getValue(properties);
 
       if (tableCount <= 1) {
         tableNames.add(tableNamePrefix);
@@ -299,19 +279,30 @@ public abstract class IgniteAbstractClient extends DB {
         }
       }
 
+      String workDirProperty = IgniteParam.WORK_DIR.getValue(properties);
+      embeddedIgniteWorkDir = Paths.get(workDirProperty);
+
+      fieldCount = Integer.parseInt(properties.getProperty(
+          CoreWorkload.FIELD_COUNT_PROPERTY, CoreWorkload.FIELD_COUNT_PROPERTY_DEFAULT));
+      fieldLength = Integer.parseInt(properties.getProperty(
+          CoreWorkload.FIELD_LENGTH_PROPERTY, CoreWorkload.FIELD_LENGTH_PROPERTY_DEFAULT));
+      fieldPrefix = properties.getProperty(
+          CoreWorkload.FIELD_NAME_PREFIX, CoreWorkload.FIELD_NAME_PREFIX_DEFAULT);
+      useLimitedVarchar = Boolean.parseBoolean(properties.getProperty(
+          CoreWorkload.USE_LIMITED_VARCHAR_PROPERTY, CoreWorkload.USE_LIMITED_VARCHAR_PROPERTY_DEFAULT));
+
+      for (int i = 0; i < fieldCount; i++) {
+        valueFields.add(fieldPrefix + i);
+      }
+
+      indexCount = Integer.parseInt(properties.getProperty(
+          CoreWorkload.INDEX_COUNT_PROPERTY, CoreWorkload.INDEX_COUNT_PROPERTY_DEFAULT));
+      indexType = properties.getProperty(CoreWorkload.INDEX_TYPE_PROPERTY, "");
+
       if (indexCount > fieldCount) {
         throw new DBException(String.format(
             "Indexed fields count (%s=%s) should be less or equal to fields count (%s=%s)",
             CoreWorkload.INDEX_COUNT_PROPERTY, indexCount, CoreWorkload.FIELD_COUNT_PROPERTY, fieldCount));
-      }
-
-      recordsCount = parseLongWithModifiers(properties.getProperty(
-          Client.RECORD_COUNT_PROPERTY, Client.DEFAULT_RECORD_COUNT));
-      batchSize = parseLongWithModifiers(properties.getProperty(
-          Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
-
-      for (int i = 0; i < fieldCount; i++) {
-        valueFields.add(fieldPrefix + i);
       }
 
       hosts = properties.getProperty(HOSTS_PROPERTY);

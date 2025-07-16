@@ -47,6 +47,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
   private static final ThreadLocal<Statement> INSERT_STATEMENT = ThreadLocal
       .withInitial(IgniteSqlClient::buildInsertStatement);
 
+  /** Statement for updating 1 of field values. */
+  private static final ThreadLocal<Map<String, Statement>> UPDATE_STATEMENTS = ThreadLocal
+      .withInitial(IgniteSqlClient::buildUpdateStatements);
+
   /** Build statement for reading values. */
   private static Statement buildReadStatement() {
     return ignite.sql().createStatement(readPreparedStatementString);
@@ -55,6 +59,17 @@ public class IgniteSqlClient extends AbstractSqlClient {
   /** Build statement for inserting values. */
   private static Statement buildInsertStatement() {
     return ignite.sql().createStatement(insertPreparedStatementString);
+  }
+
+  /** Build statements for updating 1 of field values. */
+  private static Map<String, Statement> buildUpdateStatements() {
+    Map<String, Statement> statements = new java.util.HashMap<>();
+
+    updatePreparedStatementMap.forEach((field, updateSql) -> {
+      statements.put(field, ignite.sql().createStatement(updateSql));
+    });
+
+    return statements;
   }
 
   /** {@inheritDoc} */
@@ -141,9 +156,17 @@ public class IgniteSqlClient extends AbstractSqlClient {
    * @param values Values.
    */
   protected void modify(Transaction tx, String key, Map<String, ByteIterator> values) {
-    String updateSql = getUpdateSql(key, values);
+    if (values.size() == 1) {
+      String field = values.keySet().iterator().next();
 
-    ignite.sql().execute(tx, updateSql).close();
+      Statement updateStmt = UPDATE_STATEMENTS.get().get(field);
+
+      ignite.sql().execute(tx, updateStmt, key, String.valueOf(values.get(field))).close();
+    } else {
+      String updateSql = getUpdateSql(key, values);
+
+      ignite.sql().execute(tx, updateSql).close();
+    }
   }
 
   /**

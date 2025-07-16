@@ -85,13 +85,13 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     Map<String, PreparedStatement> updatePreparedStatements = new HashMap<>();
 
     updatePreparedStatementMap.forEach((field, updateSql) -> {
-      try {
-        PreparedStatement preparedStatement = CONN.get().prepareStatement(updateSql);
-        updatePreparedStatements.put(field, preparedStatement);
-      } catch (SQLException e) {
-        throw new RuntimeException("Unable to prepare statement for SQL: " + updateSql, e);
-      }
-    });
+        try {
+          PreparedStatement preparedStatement = CONN.get().prepareStatement(updateSql);
+          updatePreparedStatements.put(field, preparedStatement);
+        } catch (SQLException e) {
+          throw new RuntimeException("Unable to prepare statement for SQL: " + updateSql, e);
+        }
+      });
 
     return updatePreparedStatements;
   }

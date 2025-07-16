@@ -20,6 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,6 +36,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
 
   /** SQL string of prepared statement for inserting values. */
   protected static String insertPreparedStatementString;
+
+  /** SQL strings map of prepared statements for updating 1 of field values. */
+  protected static Map<String, String> updatePreparedStatementMap;
 
   /** SQL string of prepared statement for deleting values. */
   protected static String deletePreparedStatementString;
@@ -66,6 +70,14 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
 
       insertPreparedStatementString = String.format("INSERT INTO %s (%s) VALUES (%s)",
           tableNamePrefix, columnsString, valuesString);
+
+      updatePreparedStatementMap = new HashMap<>();
+      for (String field : valueFields) {
+        updatePreparedStatementMap.put(
+            field,
+            String.format("UPDATE %s SET %s = ? WHERE %s = ?", tableNamePrefix, field, PRIMARY_COLUMN_NAME)
+        );
+      }
 
       deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?",
           tableNamePrefix, PRIMARY_COLUMN_NAME);

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 
@@ -87,5 +88,22 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
     for (String fieldName: valueFields) {
       statement.setString(i++, values.get(fieldName).toString());
     }
+  }
+
+  /**
+   * Get UPDATE SQL string.
+   *
+   * @param key Key.
+   * @param values Values.
+   */
+  protected String getUpdateSql(String key, Map<String, ByteIterator> values) {
+    List<String> updateValuesList = new ArrayList<>();
+
+    for (Entry<String, ByteIterator> entry : values.entrySet()) {
+      updateValuesList.add(String.format("%s='%s'", entry.getKey(), entry.getValue().toString()));
+    }
+
+    return String.format("UPDATE %s SET %s WHERE %s = '%s'",
+        tableNamePrefix, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
   }
 }

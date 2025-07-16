@@ -22,11 +22,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -248,14 +245,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
    */
   private void modify(String key, Map<String, ByteIterator> values) throws SQLException {
     try (Statement stmt = CONN.get().createStatement()) {
-      List<String> updateValuesList = new ArrayList<>();
-
-      for (Entry<String, ByteIterator> entry : values.entrySet()) {
-        updateValuesList.add(String.format("%s='%s'", entry.getKey(), entry.getValue().toString()));
-      }
-
-      String sql = String.format("UPDATE %s SET %s WHERE %s = '%s'",
-          tableNamePrefix, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
+      String sql = getUpdateSql(key, values);
 
       stmt.executeUpdate(sql);
     }

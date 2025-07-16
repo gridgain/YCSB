@@ -168,4 +168,27 @@ public class IgniteTxKvClient extends IgniteClient {
       return Status.ERROR;
     }
   }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status update(String table, String key, Map<String, ByteIterator> values) {
+    try {
+      tx = ignite.transactions().begin(txOptions);
+
+      getAndPut(tx, key, values);
+
+      tx.commit();
+
+      return Status.OK;
+    } catch (TransactionException txEx) {
+      LOG.error("Error updating key in transaction. Calling rollback.", txEx);
+      tx.rollback();
+
+      throw txEx;
+    } catch (Exception e) {
+      LOG.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
 }

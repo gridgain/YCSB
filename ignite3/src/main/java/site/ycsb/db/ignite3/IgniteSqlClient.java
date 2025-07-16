@@ -72,7 +72,15 @@ public class IgniteSqlClient extends AbstractSqlClient {
   /** {@inheritDoc} */
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    return Status.NOT_IMPLEMENTED;
+    try {
+      modify(null, key, values);
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   /** {@inheritDoc} */
@@ -123,6 +131,19 @@ public class IgniteSqlClient extends AbstractSqlClient {
     valuesList.add(key);
     valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
     ignite.sql().execute(tx, INSERT_STATEMENT.get(), (Object[]) valuesList.toArray(new String[0])).close();
+  }
+
+  /**
+   * Perform single UPDATE operation with Ignite SQL.
+   *
+   * @param tx Transaction.
+   * @param key Key.
+   * @param values Values.
+   */
+  protected void modify(Transaction tx, String key, Map<String, ByteIterator> values) {
+    String updateSql = getUpdateSql(key, values);
+
+    ignite.sql().execute(tx, updateSql).close();
   }
 
   /**

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
+import site.ycsb.workloads.CoreWorkload;
 
 /**
  * Abstract SQL client for Ignite.
@@ -37,8 +38,14 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** SQL string of prepared statement for inserting values. */
   protected static String insertPreparedStatementString;
 
+  /** Whether to write all fields in update operation. */
+  protected static boolean updateAllFields;
+
   /** SQL strings map of prepared statements for updating 1 of field values. */
-  protected static Map<String, String> updatePreparedStatementMap;
+  protected static Map<String, String> updateOneFieldPreparedStatementStrings;
+
+  /** SQL string of prepared statement for updating all fields. */
+  protected static String updateAllFieldsPreparedStatementString;
 
   /** SQL string of prepared statement for deleting values. */
   protected static String deletePreparedStatementString;
@@ -51,9 +58,14 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
     synchronized (AbstractSqlClient.class) {
       if (readPreparedStatementString != null
           || insertPreparedStatementString != null
-          || deletePreparedStatementString != null) {
+          || deletePreparedStatementString != null
+          || updateOneFieldPreparedStatementStrings != null
+          || updateAllFieldsPreparedStatementString != null) {
         return;
       }
+
+      updateAllFields = Boolean.parseBoolean(getProperties().getProperty(
+          CoreWorkload.WRITE_ALL_FIELDS_PROPERTY, CoreWorkload.WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
 
       readPreparedStatementString = useColumnar ?
           String.format("SELECT * FROM %s /*+ use_secondary_storage */ WHERE %s = ?",
@@ -71,13 +83,17 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
       insertPreparedStatementString = String.format("INSERT INTO %s (%s) VALUES (%s)",
           tableNamePrefix, columnsString, valuesString);
 
-      updatePreparedStatementMap = new HashMap<>();
+      updateOneFieldPreparedStatementStrings = new HashMap<>();
       for (String field : valueFields) {
-        updatePreparedStatementMap.put(
+        updateOneFieldPreparedStatementStrings.put(
             field,
             String.format("UPDATE %s SET %s = ? WHERE %s = ?", tableNamePrefix, field, PRIMARY_COLUMN_NAME)
         );
       }
+
+      String updateFields = String.join(" = ?, ", valueFields) + " = ?";
+      updateAllFieldsPreparedStatementString = String.format("UPDATE %s SET %s WHERE %s = ?",
+          tableNamePrefix, updateFields, PRIMARY_COLUMN_NAME);
 
       deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?",
           tableNamePrefix, PRIMARY_COLUMN_NAME);

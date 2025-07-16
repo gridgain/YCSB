@@ -66,8 +66,8 @@ public class IgniteSqlClient extends AbstractSqlClient {
     Map<String, Statement> statements = new java.util.HashMap<>();
 
     updatePreparedStatementMap.forEach((field, updateSql) -> {
-      statements.put(field, ignite.sql().createStatement(updateSql));
-    });
+        statements.put(field, ignite.sql().createStatement(updateSql));
+      });
 
     return statements;
   }

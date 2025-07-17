@@ -50,6 +50,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** SQL string of prepared statement for deleting values. */
   protected static String deletePreparedStatementString;
 
+  /** Whether to use prepared statements. */
+  protected static boolean usePreparedStatements;
+
   /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
@@ -66,6 +69,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
 
       updateAllFields = Boolean.parseBoolean(getProperties().getProperty(
           CoreWorkload.WRITE_ALL_FIELDS_PROPERTY, CoreWorkload.WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
+
+      usePreparedStatements = Boolean.parseBoolean(getProperties().getProperty(
+          "usepreparedstatements", "true"));
 
       readPreparedStatementString = useColumnar ?
           String.format("SELECT * FROM %s /*+ use_secondary_storage */ WHERE %s = ?",

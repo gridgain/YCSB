@@ -165,20 +165,22 @@ public class IgniteSqlClient extends AbstractSqlClient {
    * @param values Values.
    */
   protected void modify(Transaction tx, String key, Map<String, ByteIterator> values) {
-    if (updateAllFields) {
-      List<String> valuesList = new ArrayList<>();
-      valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
-      valuesList.add(key);
+    if (usePreparedStatements) {
+      if (updateAllFields) {
+        List<String> valuesList = new ArrayList<>();
+        valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
+        valuesList.add(key);
 
-      Statement updateStmt = UPDATE_ALL_FIELDS_STATEMENT.get();
+        Statement updateStmt = UPDATE_ALL_FIELDS_STATEMENT.get();
 
-      ignite.sql().execute(tx, updateStmt, (Object[]) valuesList.toArray(new String[0])).close();
-    } else if (values.size() == 1) {
-      String field = values.keySet().iterator().next();
+        ignite.sql().execute(tx, updateStmt, (Object[]) valuesList.toArray(new String[0])).close();
+      } else {
+        String field = values.keySet().iterator().next();
 
-      Statement updateStmt = UPDATE_ONE_FIELD_STATEMENTS.get().get(field);
+        Statement updateStmt = UPDATE_ONE_FIELD_STATEMENTS.get().get(field);
 
-      ignite.sql().execute(tx, updateStmt, String.valueOf(values.get(field)), key).close();
+        ignite.sql().execute(tx, updateStmt, String.valueOf(values.get(field)), key).close();
+      }
     } else {
       String updateSql = getUpdateSql(key, values);
 

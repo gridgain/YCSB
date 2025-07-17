@@ -278,24 +278,26 @@ public class IgniteJdbcClient extends AbstractSqlClient {
    * @param values Values.
    */
   private void modify(String key, Map<String, ByteIterator> values) throws SQLException {
-    if (updateAllFields) {
-      PreparedStatement stmt = UPDATE_ALL_FIELDS_PREPARED_STATEMENT.get();
+    if (usePreparedStatements) {
+      if (updateAllFields) {
+        PreparedStatement stmt = UPDATE_ALL_FIELDS_PREPARED_STATEMENT.get();
 
-      int i = 1;
-      for (String fieldName : valueFields) {
-        stmt.setString(i++, values.get(fieldName).toString());
+        int i = 1;
+        for (String fieldName : valueFields) {
+          stmt.setString(i++, values.get(fieldName).toString());
+        }
+        stmt.setString(i, key);
+
+        stmt.executeUpdate();
+      } else {
+        String field = values.keySet().iterator().next();
+
+        PreparedStatement stmt = UPDATE_ONE_FIELD_PREPARED_STATEMENTS.get().get(field);
+        stmt.setString(1, values.get(field).toString());
+        stmt.setString(2, key);
+
+        stmt.executeUpdate();
       }
-      stmt.setString(i, key);
-
-      stmt.executeUpdate();
-    } else if (values.size() == 1) {
-      String field = values.keySet().iterator().next();
-
-      PreparedStatement stmt = UPDATE_ONE_FIELD_PREPARED_STATEMENTS.get().get(field);
-      stmt.setString(1, values.get(field).toString());
-      stmt.setString(2, key);
-
-      stmt.executeUpdate();
     } else {
       try (Statement stmt = CONN.get().createStatement()) {
         String sql = getUpdateSql(key, values);

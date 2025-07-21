@@ -277,7 +277,7 @@ public class IgniteJdbcClient extends AbstractSqlClient {
    * @param key Key.
    * @param values Values.
    */
-  private void modify(String key, Map<String, ByteIterator> values) throws SQLException {
+  protected void modify(String key, Map<String, ByteIterator> values) throws SQLException {
     if (updateAllFields) {
       PreparedStatement stmt = UPDATE_ALL_FIELDS_PREPARED_STATEMENT.get();
 

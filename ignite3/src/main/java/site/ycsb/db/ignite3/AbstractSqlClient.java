@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.workloads.CoreWorkload;
@@ -91,7 +92,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
         );
       }
 
-      String updateFields = String.join(" = ?, ", valueFields) + " = ?";
+      String updateFields = valueFields.stream()
+          .map(v -> String.format("%s = ?", v))
+          .collect(Collectors.joining(", "));
       updateAllFieldsPreparedStatementString = String.format("UPDATE %s SET %s WHERE %s = ?",
           tableNamePrefix, updateFields, PRIMARY_COLUMN_NAME);
 

@@ -22,11 +22,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -56,6 +54,14 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   private static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = ThreadLocal
       .withInitial(IgniteJdbcClient::buildInsertStatement);
 
+  /** Prepared statements map for updating 1 of field values. */
+  private static final ThreadLocal<Map<String, PreparedStatement>> UPDATE_ONE_FIELD_PREPARED_STATEMENTS = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildUpdateOneStatements);
+
+  /** Prepared statement for updating all fields. */
+  private static final ThreadLocal<PreparedStatement> UPDATE_ALL_FIELDS_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildUpdateAllStatement);
+
   /** Prepared statement for deleting values. */
   private static final ThreadLocal<PreparedStatement> DELETE_PREPARED_STATEMENT = ThreadLocal
       .withInitial(IgniteJdbcClient::buildDeleteStatement);
@@ -73,6 +79,31 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   private static PreparedStatement buildInsertStatement() {
     try {
       return CONN.get().prepareStatement(insertPreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
+    }
+  }
+
+  /** Build prepared statements map for updating 1 of field values. */
+  private static Map<String, PreparedStatement> buildUpdateOneStatements() {
+    Map<String, PreparedStatement> updatePreparedStatements = new HashMap<>();
+
+    updateOneFieldPreparedStatementStrings.forEach((field, updateSql) -> {
+        try {
+          PreparedStatement preparedStatement = CONN.get().prepareStatement(updateSql);
+          updatePreparedStatements.put(field, preparedStatement);
+        } catch (SQLException e) {
+          throw new RuntimeException("Unable to prepare statement for SQL: " + updateSql, e);
+        }
+      });
+
+    return updatePreparedStatements;
+  }
+
+  /** Build prepared statement for updating all fields. */
+  private static PreparedStatement buildUpdateAllStatement() {
+    try {
+      return CONN.get().prepareStatement(updateAllFieldsPreparedStatementString);
     } catch (SQLException e) {
       throw new RuntimeException("Unable to prepare statement for SQL: " + insertPreparedStatementString, e);
     }
@@ -246,18 +277,31 @@ public class IgniteJdbcClient extends AbstractSqlClient {
    * @param key Key.
    * @param values Values.
    */
-  private void modify(String key, Map<String, ByteIterator> values) throws SQLException {
-    try (Statement stmt = CONN.get().createStatement()) {
-      List<String> updateValuesList = new ArrayList<>();
+  protected void modify(String key, Map<String, ByteIterator> values) throws SQLException {
+    if (updateAllFields) {
+      PreparedStatement stmt = UPDATE_ALL_FIELDS_PREPARED_STATEMENT.get();
 
-      for (Entry<String, ByteIterator> entry : values.entrySet()) {
-        updateValuesList.add(String.format("%s='%s'", entry.getKey(), entry.getValue().toString()));
+      int i = 1;
+      for (String fieldName : valueFields) {
+        stmt.setString(i++, values.get(fieldName).toString());
       }
+      stmt.setString(i, key);
 
-      String sql = String.format("UPDATE %s SET %s WHERE %s = '%s'",
-          tableNamePrefix, String.join(", ", updateValuesList), PRIMARY_COLUMN_NAME, key);
+      stmt.executeUpdate();
+    } else if (values.size() == 1) {
+      String field = values.keySet().iterator().next();
 
-      stmt.executeUpdate(sql);
+      PreparedStatement stmt = UPDATE_ONE_FIELD_PREPARED_STATEMENTS.get().get(field);
+      stmt.setString(1, values.get(field).toString());
+      stmt.setString(2, key);
+
+      stmt.executeUpdate();
+    } else {
+      try (Statement stmt = CONN.get().createStatement()) {
+        String sql = getUpdateSql(key, values);
+
+        stmt.executeUpdate(sql);
+      }
     }
   }
 

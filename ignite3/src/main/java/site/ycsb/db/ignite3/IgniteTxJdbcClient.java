@@ -143,7 +143,21 @@ public class IgniteTxJdbcClient extends IgniteJdbcClient {
   /** {@inheritDoc} */
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    return Status.NOT_IMPLEMENTED;
+    try {
+      modify(key, values);
+
+      CONN.get().commit();
+
+      return Status.OK;
+    } catch (SQLException e) {
+      LOG.error("Error updating key in transaction. Calling rollback.", e);
+
+      return rollback();
+    } catch (Exception e) {
+      LOG.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   /** {@inheritDoc} */

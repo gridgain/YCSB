@@ -146,7 +146,15 @@ public class IgniteClient extends IgniteAbstractClient {
   /** {@inheritDoc} */
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    return Status.NOT_IMPLEMENTED;
+    try {
+      getAndPut(null, key, values);
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   /** {@inheritDoc} */
@@ -177,6 +185,22 @@ public class IgniteClient extends IgniteAbstractClient {
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
     getKvView(key).put(tx, tKey, tValue);
+  }
+
+  /**
+   * Perform single getAndPut operation with key-value view.
+   *
+   * @param tx Transaction.
+   * @param key Key.
+   * @param values Values.
+   */
+  protected void getAndPut(Transaction tx, String key, Map<String, ByteIterator> values) {
+    Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
+
+    Tuple tValue = Tuple.create(fieldCount);
+    values.forEach((field, value) -> tValue.set(field, value.toString()));
+
+    getKvView(key).getAndPut(tx, tKey, tValue);
   }
 
   /**

@@ -99,7 +99,24 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
   /** {@inheritDoc} */
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    return Status.NOT_IMPLEMENTED;
+    try {
+      tx = ignite.transactions().begin(txOptions);
+
+      modify(tx, key, values);
+
+      tx.commit();
+
+      return Status.OK;
+    } catch (TransactionException txEx) {
+      LOG.error("Error updating key in transaction. Calling rollback.", txEx);
+      tx.rollback();
+
+      throw txEx;
+    } catch (Exception e) {
+      LOG.error(String.format("Error updating key: %s", key), e);
+
+      return Status.ERROR;
+    }
   }
 
   /** {@inheritDoc} */

@@ -16,6 +16,8 @@
  */
 package site.ycsb.db.ignite3;
 
+import static site.ycsb.Client.parseIntWithModifiers;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import site.ycsb.ByteIterator;
+import site.ycsb.Client;
 import site.ycsb.DBException;
 import site.ycsb.workloads.CoreWorkload;
 
@@ -35,6 +38,9 @@ import site.ycsb.workloads.CoreWorkload;
 public abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** SQL string of prepared statement for reading values. */
   protected static String readPreparedStatementString;
+
+  /** SQL string of prepared statement for reading batch of values. */
+  protected static String batchReadPreparedStatementString;
 
   /** SQL string of prepared statement for inserting values. */
   protected static String insertPreparedStatementString;
@@ -51,6 +57,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** SQL string of prepared statement for deleting values. */
   protected static String deletePreparedStatementString;
 
+  /** Batch size. */
+  protected static int batchSize;
+
   /** {@inheritDoc} */
   @Override
   public void init() throws DBException {
@@ -58,6 +67,7 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
 
     synchronized (AbstractSqlClient.class) {
       if (readPreparedStatementString != null
+          || batchReadPreparedStatementString != null
           || insertPreparedStatementString != null
           || deletePreparedStatementString != null
           || updateOneFieldPreparedStatementStrings != null
@@ -68,21 +78,32 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
       updateAllFields = Boolean.parseBoolean(getProperties().getProperty(
           CoreWorkload.WRITE_ALL_FIELDS_PROPERTY, CoreWorkload.WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
 
+      batchSize = parseIntWithModifiers(getProperties().getProperty(
+          Client.BATCH_SIZE_PROPERTY, Client.DEFAULT_BATCH_SIZE));
+
+      List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
+      columns.addAll(valueFields);
+
+      String columnNamesString = String.join(", ", columns);
+
+      String columnDynamicParamsString = String.join(", ", Collections.nCopies(columns.size(), "?"));
+
+      String batchDynamicParamsString = String.join(", ", Collections.nCopies(batchSize, "?"));
+
       readPreparedStatementString = useColumnar ?
           String.format("SELECT * FROM %s /*+ use_secondary_storage */ WHERE %s = ?",
               tableNamePrefix, PRIMARY_COLUMN_NAME) :
           String.format("SELECT * FROM %s WHERE %s = ?",
               tableNamePrefix, PRIMARY_COLUMN_NAME);
 
-      List<String> columns = new ArrayList<>(Collections.singletonList(PRIMARY_COLUMN_NAME));
-      columns.addAll(valueFields);
-
-      String columnsString = String.join(", ", columns);
-
-      String valuesString = String.join(", ", Collections.nCopies(columns.size(), "?"));
+      batchReadPreparedStatementString = useColumnar ?
+          String.format("SELECT * FROM %s /*+ use_secondary_storage */ WHERE %s in (%s)",
+              tableNamePrefix, PRIMARY_COLUMN_NAME, batchDynamicParamsString) :
+          String.format("SELECT * FROM %s WHERE %s in (%s)",
+              tableNamePrefix, PRIMARY_COLUMN_NAME, batchDynamicParamsString);
 
       insertPreparedStatementString = String.format("INSERT INTO %s (%s) VALUES (%s)",
-          tableNamePrefix, columnsString, valuesString);
+          tableNamePrefix, columnNamesString, columnDynamicParamsString);
 
       updateOneFieldPreparedStatementStrings = new HashMap<>();
       for (String field : valueFields) {

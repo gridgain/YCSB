@@ -163,7 +163,7 @@ public class StatusThread extends Thread {
     double throughput = 1000d * ((double) totalops) / ((double) interval) / ((double) batchsize);
     double curthroughput = 1000d * ((double) (totalops - lastTotalOps)) /
         ((double) (endIntervalMs - startIntervalMs)) / ((double) batchsize);
-    long estremaining = (long) Math.ceil(todoops / throughput);
+    long estremaining = (long) Math.ceil(todoops / throughput / batchsize);
 
 
     DecimalFormat d = new DecimalFormat("#.##");

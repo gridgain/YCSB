@@ -18,9 +18,11 @@ package site.ycsb.db.ignite3;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.sql.BatchedArguments;
 import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.sql.Statement;
@@ -43,6 +45,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
   private static final ThreadLocal<Statement> READ_STATEMENT = ThreadLocal
       .withInitial(IgniteSqlClient::buildReadStatement);
 
+  /** Statement for reading batch of values. */
+  private static final ThreadLocal<Statement> BATCH_READ_STATEMENT = ThreadLocal
+      .withInitial(IgniteSqlClient::buildBatchReadStatement);
+
   /** Statement for inserting values. */
   private static final ThreadLocal<Statement> INSERT_STATEMENT = ThreadLocal
       .withInitial(IgniteSqlClient::buildInsertStatement);
@@ -58,6 +64,11 @@ public class IgniteSqlClient extends AbstractSqlClient {
   /** Build statement for reading values. */
   private static Statement buildReadStatement() {
     return ignite.sql().createStatement(readPreparedStatementString);
+  }
+
+  /** Build statement for reading batch of values. */
+  private static Statement buildBatchReadStatement() {
+    return ignite.sql().createStatement(batchReadPreparedStatementString);
   }
 
   /** Build statement for inserting values. */
@@ -95,6 +106,52 @@ public class IgniteSqlClient extends AbstractSqlClient {
 
   /** {@inheritDoc} */
   @Override
+  public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
+      List<Map<String, ByteIterator>> results) {
+    try {
+      try (ResultSet<SqlRow> rs = ignite.sql().execute(
+          null, BATCH_READ_STATEMENT.get(), (Object[]) keys.toArray(new String[0]))) {
+        if (!rs.hasNext()) {
+          return Status.NOT_FOUND;
+        }
+
+        int rowIdx = -1;
+
+        while (rs.hasNext()) {
+          SqlRow row = rs.next();
+
+          rowIdx++;
+
+          if (fields.get(rowIdx) == null || fields.get(rowIdx).isEmpty()) {
+            fields.set(rowIdx, new HashSet<>());
+            fields.get(rowIdx).addAll(valueFields);
+          }
+
+          Map<String, ByteIterator> result = new LinkedHashMap<>();
+
+          for (String column : fields.get(rowIdx)) {
+            // Shift to exclude the first column from the result
+            String val = row.stringValue(valueFields.indexOf(column) + 1);
+
+            if (val != null) {
+              result.put(column, new StringByteIterator(val));
+            }
+          }
+
+          results.add(result);
+        }
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error("Error reading batch of keys.", e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
       modify(null, key, values);
@@ -116,6 +173,33 @@ public class IgniteSqlClient extends AbstractSqlClient {
       return Status.OK;
     } catch (Exception e) {
       LOG.error(String.format("Error inserting key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
+    try {
+      List<List<Object>> valuesList = new ArrayList<>(values.size());
+
+      for (int i = 0; i < keys.size(); i++) {
+        List<Object> row = new ArrayList<>(valueFields.size());
+        row.add(keys.get(i));
+
+        for (String fieldName: valueFields) {
+          row.add(values.get(i).get(fieldName).toString());
+        }
+
+        valuesList.add(row);
+      }
+
+      ignite.sql().executeBatch(null, INSERT_STATEMENT.get(), BatchedArguments.from(valuesList));
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error("Error inserting batch of keys.", e);
 
       return Status.ERROR;
     }

@@ -24,6 +24,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +52,10 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   private static final ThreadLocal<PreparedStatement> READ_PREPARED_STATEMENT = ThreadLocal
       .withInitial(IgniteJdbcClient::buildReadStatement);
 
+  /** Prepared statement for reading batch of values. */
+  private static final ThreadLocal<PreparedStatement> BATCH_READ_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildBatchReadStatement);
+
   /** Prepared statement for inserting values. */
   private static final ThreadLocal<PreparedStatement> INSERT_PREPARED_STATEMENT = ThreadLocal
       .withInitial(IgniteJdbcClient::buildInsertStatement);
@@ -72,6 +78,15 @@ public class IgniteJdbcClient extends AbstractSqlClient {
       return CONN.get().prepareStatement(readPreparedStatementString);
     } catch (SQLException e) {
       throw new RuntimeException("Unable to prepare statement for SQL: " + readPreparedStatementString, e);
+    }
+  }
+
+  /** Build prepared statement for reading batch of values. */
+  private static PreparedStatement buildBatchReadStatement() {
+    try {
+      return CONN.get().prepareStatement(batchReadPreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + batchReadPreparedStatementString, e);
     }
   }
 
@@ -155,6 +170,57 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
   /** {@inheritDoc} */
   @Override
+  public Status batchRead(String table, List<String> keys, List<Set<String>> fields,
+      List<Map<String, ByteIterator>> results) {
+    try {
+      PreparedStatement stmt = BATCH_READ_PREPARED_STATEMENT.get();
+
+      int i = 1;
+
+      for (String key : keys) {
+        stmt.setString(i++, key);
+      }
+
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (!rs.isBeforeFirst()) {
+          return Status.NOT_FOUND;
+        }
+
+        int rowIdx = -1;
+
+        while (!rs.next()) {
+          rowIdx++;
+
+          if (fields.get(rowIdx) == null || fields.get(rowIdx).isEmpty()) {
+            fields.set(rowIdx, new HashSet<>());
+            fields.get(rowIdx).addAll(valueFields);
+          }
+
+          Map<String, ByteIterator> result = new LinkedHashMap<>();
+
+          for (String column : fields.get(rowIdx)) {
+            //+2 because indexes start from 1 and 1st one is key field
+            String val = rs.getString(valueFields.indexOf(column) + 2);
+
+            if (val != null) {
+              result.put(column, new StringByteIterator(val));
+            }
+          }
+
+          results.add(result);
+        }
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error("Error reading batch of keys.", e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
       modify(key, values);
@@ -176,6 +242,27 @@ public class IgniteJdbcClient extends AbstractSqlClient {
       return Status.OK;
     } catch (Exception e) {
       LOG.error(String.format("Error inserting key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status batchInsert(String table, List<String> keys, List<Map<String, ByteIterator>> values) {
+    try {
+      PreparedStatement stmt = INSERT_PREPARED_STATEMENT.get();
+
+      for (int i = 0; i < keys.size(); i++) {
+        setStatementValues(stmt, keys.get(i), values.get(i));
+        stmt.addBatch();
+      }
+
+      stmt.executeBatch();
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error("Error inserting batch of keys.", e);
 
       return Status.ERROR;
     }

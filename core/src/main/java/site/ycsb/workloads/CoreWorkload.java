@@ -676,7 +676,7 @@ public class CoreWorkload extends Workload {
   public boolean doInsert(DB db, Object threadstate) {
     CoreWorkloadThreadState threadState = (CoreWorkloadThreadState) threadstate;
 
-    int keynum = keysequence.nextValue().intValue();
+    long keynum = keysequence.nextValue().longValue();
     String dbkey = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
     HashMap<String, ByteIterator> values = buildValues(dbkey);
 
@@ -808,6 +808,10 @@ public class CoreWorkload extends Workload {
     // choose a random key
     long keynum = nextKeynum();
 
+    doTransactionRead(db, threadState, keynum);
+  }
+
+  public void doTransactionRead(DB db, CoreWorkloadThreadState threadState, long keynum) {
     String keyname = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
 
     HashSet<String> fields = null;
@@ -920,8 +924,12 @@ public class CoreWorkload extends Workload {
 
   public void doTransactionUpdate(DB db, CoreWorkloadThreadState threadState) {
     // choose a random key
-    long keynum = nextKeynum();
+    long keynum = transactioninsertkeysequence.nextValue();
 
+    doTransactionUpdate(db, threadState, keynum);
+  }
+
+  public void doTransactionUpdate(DB db, CoreWorkloadThreadState threadState, long keynum) {
     String keyname = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
 
     HashMap<String, ByteIterator> values;
@@ -941,6 +949,10 @@ public class CoreWorkload extends Workload {
     // choose the next key
     long keynum = transactioninsertkeysequence.nextValue();
 
+    doTransactionInsert(db, threadState, keynum);
+  }
+
+  public void doTransactionInsert(DB db, CoreWorkloadThreadState threadState, long keynum) {
     try {
       String dbkey = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
 

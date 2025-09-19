@@ -39,7 +39,6 @@ import site.ycsb.StringByteIterator;
 
 /**
  * Ignite key-value client.
- *
  * See {@code ignite/README.md} for details.
  */
 public class IgniteClient extends IgniteAbstractClient {
@@ -64,9 +63,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      BinaryObject binObj = getCache(key).get(key);
-
-      return convert(binObj, fields, result);
+      return get(key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -107,7 +104,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
-      getCache(key).invoke(key, new Updater(values));
+      getAndPut(key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -121,9 +118,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      BinaryObject binObj = convert(values);
-
-      getCache(key).put(key, binObj);
+      put(key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -159,7 +154,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      getCache(key).remove(key);
+      remove(key);
 
       return Status.OK;
     } catch (Exception e) {
@@ -257,5 +252,47 @@ public class IgniteClient extends IgniteAbstractClient {
 
       return null;
     }
+  }
+
+  /**
+   * Perform single put operation.
+   *
+   * @param key Key.
+   * @param values Values.
+   */
+  protected void put(String key, Map<String, ByteIterator> values) {
+    BinaryObject binObj = convert(values);
+    getCache(key).put(key, binObj);
+  }
+
+  /**
+   * Perform single getAndPut operation.
+   *
+   * @param key Key.
+   * @param values Values.
+   */
+  protected void getAndPut(String key, Map<String, ByteIterator> values) {
+    getCache(key).invoke(key, new Updater(values));
+  }
+
+  /**
+   * Perform single get operation.
+   *
+   * @param key Key.
+   * @param fields Fields.
+   * @param result Result.
+   */
+  protected Status get(String key, Set<String> fields, Map<String, ByteIterator> result) {
+    BinaryObject binObj = getCache(key).get(key);
+    return convert(binObj, fields, result);
+  }
+
+  /**
+   * Perform single delete operation.
+   *
+   * @param key Key.
+   */
+  protected void remove(String key) {
+    getCache(key).remove(key);
   }
 }

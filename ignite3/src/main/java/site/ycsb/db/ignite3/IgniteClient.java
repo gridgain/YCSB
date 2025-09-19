@@ -27,7 +27,6 @@ import org.apache.ignite.table.Tuple;
 import org.apache.ignite.tx.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 import site.ycsb.ByteIterator;
 import site.ycsb.Status;
 import site.ycsb.StringByteIterator;
@@ -161,7 +160,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      getKvView(key).remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+      remove(null, key);
 
       return Status.OK;
     } catch (Exception e) {
@@ -211,7 +210,6 @@ public class IgniteClient extends IgniteAbstractClient {
    * @param fields Fields.
    * @param result Result.
    */
-  @NotNull
   protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
     Tuple tValue = getKvView(key).get(tx, tKey);
@@ -235,5 +233,15 @@ public class IgniteClient extends IgniteAbstractClient {
     }
 
     return Status.OK;
+  }
+
+  /**
+   * Perform single delete operation with key-value view.
+   *
+   * @param tx Transaction.
+   * @param key Key.
+   */
+  protected void remove(Transaction tx, String key) {
+    getKvView(key).remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
   }
 }

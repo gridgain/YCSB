@@ -36,7 +36,7 @@ public class IgniteTxKvClient extends IgniteClient {
   private static final Logger LOG = LogManager.getLogger(IgniteTxKvClient.class);
 
   /** Transaction. */
-  private Transaction tx;
+  protected Transaction tx;
 
   /** {@inheritDoc} */
   @Override
@@ -152,7 +152,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       tx = ignite.transactions().begin(txOptions);
 
-      getKvView(key).remove(tx, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+      remove(tx, key);
 
       tx.commit();
 

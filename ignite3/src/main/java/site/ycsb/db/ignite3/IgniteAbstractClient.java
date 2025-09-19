@@ -399,6 +399,23 @@ public abstract class IgniteAbstractClient extends DB {
    * Prepare the creation table SQL line(s).
    */
   public List<String> createTablesSQL() {
+    String fieldsSpecs = getFieldsSpecs();
+    String zoneSpecs = getZoneSpecs();
+    List<String> sqlList = new ArrayList<>();
+
+    for (String tableName : tableNames) {
+      sqlList.add(String.format(
+          "CREATE TABLE IF NOT EXISTS %s(%s VARCHAR PRIMARY KEY, %s)%s",
+          tableName, PRIMARY_COLUMN_NAME, fieldsSpecs, zoneSpecs));
+    }
+
+    return sqlList;
+  }
+
+  /**
+   * Get fields specifications SQL.
+   */
+  protected String getFieldsSpecs() {
     String fieldType = useLimitedVarchar
         ? String.format(" VARCHAR(%s)", fieldLength)
         : " VARCHAR";
@@ -407,29 +424,27 @@ public abstract class IgniteAbstractClient extends DB {
         .map(e -> e + fieldType)
         .collect(Collectors.joining(", "));
 
-    String withZoneName = "";
+    return fieldsSpecs;
+  }
+
+  /**
+   * Get zone specifications SQL.
+   */
+  protected String getZoneSpecs() {
+    String zoneSpecs = "";
     if (!zoneName.isEmpty()) {
       if (useColumnar) {
-        withZoneName = String.format(
+        zoneSpecs = String.format(
             " ZONE \"%s\" STORAGE PROFILE '%s' SECONDARY ZONE \"%s\" SECONDARY STORAGE PROFILE '%s'",
             zoneName,
             storageProfile,
             zoneName,
             secondaryStorageProfile);
       } else {
-        withZoneName = String.format(" ZONE \"%s\"", zoneName);
+        zoneSpecs = String.format(" ZONE \"%s\"", zoneName);
       }
     }
-
-    List<String> sqlList = new ArrayList<>();
-
-    for (String tableName : tableNames) {
-      sqlList.add(String.format(
-          "CREATE TABLE IF NOT EXISTS %s(%s VARCHAR PRIMARY KEY, %s)%s",
-          tableName, PRIMARY_COLUMN_NAME, fieldsSpecs, withZoneName));
-    }
-
-    return sqlList;
+    return zoneSpecs;
   }
 
   /**

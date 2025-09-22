@@ -15,8 +15,7 @@ public class CompositeKey implements Serializable {
   @AffinityKeyMapped
   private String ycsbKey;
 
-  public CompositeKey(String key)
-  {
+  public CompositeKey(String key) {
     tagName = "tagn" + key.substring(4);
     tagValue = "tagv" + key.substring(4);
     ycsbKey = key;

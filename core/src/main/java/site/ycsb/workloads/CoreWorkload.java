@@ -620,7 +620,7 @@ public class CoreWorkload extends Workload {
   /**
    * Builds values for all fields.
    */
-  private HashMap<String, ByteIterator> buildValues(String key) {
+  protected HashMap<String, ByteIterator> buildValues(String key) {
     HashMap<String, ByteIterator> values = new HashMap<>();
 
     for (String fieldkey : fieldnames) {

@@ -1,5 +1,7 @@
 package site.ycsb.workloads;
 
+import java.util.HashMap;
+import site.ycsb.ByteIterator;
 import site.ycsb.DB;
 
 /**
@@ -23,6 +25,27 @@ public class CrudWorkload extends CoreWorkload {
     threadState.incrementOps();
 
     return true;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void doTransactionInsert(DB db, CoreWorkloadThreadState threadState, long keynum) {
+    String dbkey = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
+
+    HashMap<String, ByteIterator> values = buildValues(dbkey);
+
+    if (!isBatched) {
+      db.insert(table, dbkey, values);
+    } else {
+      threadState.getBatchKeysList().add(dbkey);
+      threadState.getBatchValuesList().add(values);
+
+      if (threadState.isBatchPrepared()) {
+        db.batchInsert(table, threadState.getBatchKeysList(), threadState.getBatchValuesList());
+        threadState.getBatchKeysList().clear();
+        threadState.getBatchValuesList().clear();
+      }
+    }
   }
 
   /**

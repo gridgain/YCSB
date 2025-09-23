@@ -16,6 +16,7 @@
  */
 package site.ycsb.db.ignite;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -42,6 +43,18 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
+  public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
+    try {
+      return get(key, fields, result);
+    } catch (Exception e) {
+      LOG.error(String.format("Error reading key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
   protected void put(String key, Map<String, ByteIterator> values) {
     BinaryObject binObj = convert(values);
     getCache(key).put(key, binObj);
@@ -53,21 +66,13 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   /** {@inheritDoc} */
   @Override
   protected void getAndPut(String key, Map<String, ByteIterator> values) {
-    getCache(key).invoke(key, new Updater(values));
-
-    CompositeKey tagKey = new CompositeKey(key);
     BinaryObject binObj = convert(values);
-    tagsCache.getAndPut(tagKey, binObj);
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  protected Status get(String key, Set<String> fields, Map<String, ByteIterator> result) {
-    getCache(key).get(key); //ignored
+    getCache(key).getAndPut(key, binObj);
 
     CompositeKey tagKey = new CompositeKey(key);
-    BinaryObject binObj = tagsCache.get(tagKey);
-    return convert(binObj, fields, result);
+    Map<CompositeKey, BinaryObject> tagsMap = new HashMap<>();
+    tagsMap.put(tagKey, binObj);
+    tagsCache.putAll(tagsMap);
   }
 
   /** {@inheritDoc} */

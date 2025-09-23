@@ -16,9 +16,7 @@
  */
 package site.ycsb.db.ignite3;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
@@ -28,7 +26,6 @@ import org.apache.logging.log4j.Logger;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
-import site.ycsb.StringByteIterator;
 
 /**
  * Ignite3 key-value client with transactions that include extra table with composite key.
@@ -69,6 +66,19 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
+  public Status read(String table, String key, Set<String> fields,
+                     Map<String, ByteIterator> result) {
+    try {
+      return get(null, key, fields, result);
+    } catch (Exception e) {
+      LOG.error(String.format("Error reading key: %s", key), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
   protected void put(Transaction tx, String key, Map<String, ByteIterator> values) {
     Tuple tValue = Tuple.create(fieldCount);
     values.forEach((field, value) -> tValue.set(field, value.toString()));
@@ -96,40 +106,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
     tagsKey.set(TAG_NAME_COLUMN, keyToTagName(key));
     tagsKey.set(TAG_VALUE_COLUMN, keyToTagValue(key));
     tagsKey.set(PRIMARY_COLUMN_NAME, key);
-    tagsKvView.getAndPut(tx, tagsKey, tValue);
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
-    Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    getKvView(key).get(tx, tKey); //ignored GET
-
-    Tuple tagsKey = Tuple.create();
-    tagsKey.set(TAG_NAME_COLUMN, keyToTagName(key));
-    tagsKey.set(TAG_VALUE_COLUMN, keyToTagValue(key));
-    tagsKey.set(PRIMARY_COLUMN_NAME, key);
-    Tuple tValue = tagsKvView.get(tx, tagsKey);
-
-    if (tValue == null) {
-      return Status.NOT_FOUND;
-    }
-
-    if (fields == null || fields.isEmpty()) {
-      fields = new HashSet<>();
-
-      for (int colIdx = 0; colIdx < tValue.columnCount(); colIdx++) {
-        fields.add(tValue.columnName(colIdx));
-      }
-    }
-
-    for (String column : fields) {
-      if (!Objects.equals(tValue.stringValue(column), null)) {
-        result.put(column, new StringByteIterator(tValue.stringValue(column)));
-      }
-    }
-
-    return Status.OK;
+    tagsKvView.putAll(tx, Map.of(tagsKey, tValue));
   }
 
   /** {@inheritDoc} */

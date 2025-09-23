@@ -113,13 +113,13 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   @Override
   protected void remove(Transaction tx, String key) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    getKvView(key).remove(tx, tKey);
+    getKvView(key).getAndRemove(tx, tKey);
 
     Tuple tagsKey = Tuple.create();
     tagsKey.set(TAG_NAME_COLUMN, keyToTagName(key));
     tagsKey.set(TAG_VALUE_COLUMN, keyToTagValue(key));
     tagsKey.set(PRIMARY_COLUMN_NAME, key);
-    tagsKvView.remove(tx, tagsKey);
+    tagsKvView.removeAll(tx, Set.of(tagsKey));
   }
 
   /**

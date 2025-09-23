@@ -17,6 +17,7 @@
 package site.ycsb.db.ignite;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -78,9 +79,11 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   /** {@inheritDoc} */
   @Override
   protected void remove(String key) {
-    getCache(key).remove(key);
+    getCache(key).getAndRemove(key);
 
     CompositeKey tagKey = new CompositeKey(key);
-    tagsCache.remove(tagKey);
+    Set<CompositeKey> tagSet = new HashSet<>();
+    tagSet.add(tagKey);
+    tagsCache.removeAll(tagSet);
   }
 }

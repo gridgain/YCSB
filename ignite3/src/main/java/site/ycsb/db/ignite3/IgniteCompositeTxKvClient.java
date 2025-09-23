@@ -84,13 +84,25 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    getKvView(key).put(tx, tKey, tValue);
+    getKvView(key).getAndPut(tx, tKey, tValue);
 
     Tuple tagsKey = Tuple.create();
     tagsKey.set(TAG_NAME_COLUMN, keyToTagName(key));
     tagsKey.set(TAG_VALUE_COLUMN, keyToTagValue(key));
     tagsKey.set(PRIMARY_COLUMN_NAME, key);
-    tagsKvView.put(tx, tagsKey, tValue);
+    tagsKvView.putAll(tx, Map.of(tagsKey, tValue));
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
+    Status status = super.get(tx, key, fields, result);
+
+    if (status == Status.NOT_FOUND) {
+      LOG.warn("Key '{}' not found for get operation.", key);
+    }
+
+    return status;
   }
 
   /** {@inheritDoc} */
@@ -100,7 +112,12 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    getKvView(key).getAndPut(tx, tKey, tValue);
+    Tuple oldValue = getKvView(key).get(tx, tKey);
+    getKvView(key).put(tx, tKey, tValue);
+
+    if (oldValue == null) {
+      LOG.warn("Key '{}' not found for getAndPut operation.", key);
+    }
 
     Tuple tagsKey = Tuple.create();
     tagsKey.set(TAG_NAME_COLUMN, keyToTagName(key));
@@ -113,7 +130,11 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   @Override
   protected void remove(Transaction tx, String key) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
-    getKvView(key).getAndRemove(tx, tKey);
+    Tuple oldValue = getKvView(key).getAndRemove(tx, tKey);
+
+    if (oldValue == null) {
+      LOG.warn("Key '{}' not found for remove operation.", key);
+    }
 
     Tuple tagsKey = Tuple.create();
     tagsKey.set(TAG_NAME_COLUMN, keyToTagName(key));

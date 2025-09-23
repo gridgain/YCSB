@@ -58,16 +58,6 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   @Override
   protected void put(String key, Map<String, ByteIterator> values) {
     BinaryObject binObj = convert(values);
-    getCache(key).put(key, binObj);
-
-    CompositeKey tagKey = new CompositeKey(key);
-    tagsCache.put(tagKey, binObj);
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  protected void getAndPut(String key, Map<String, ByteIterator> values) {
-    BinaryObject binObj = convert(values);
     getCache(key).getAndPut(key, binObj);
 
     CompositeKey tagKey = new CompositeKey(key);
@@ -78,8 +68,41 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
+  protected Status get(String key, Set<String> fields, Map<String, ByteIterator> result) {
+    BinaryObject binObj = getCache(key).get(key);
+
+    if (binObj == null) {
+      LOG.warn("Key '{}' not found for get operation.", key);
+    }
+
+    return convert(binObj, fields, result);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  protected void getAndPut(String key, Map<String, ByteIterator> values) {
+    BinaryObject binObj = convert(values);
+    BinaryObject oldValue = getCache(key).get(key);
+    getCache(key).put(key, binObj);
+
+    if (oldValue == null) {
+      LOG.warn("Key '{}' not found for getAndPut operation.", key);
+    }
+
+    CompositeKey tagKey = new CompositeKey(key);
+    Map<CompositeKey, BinaryObject> tagsMap = new HashMap<>();
+    tagsMap.put(tagKey, binObj);
+    tagsCache.putAll(tagsMap);
+  }
+
+  /** {@inheritDoc} */
+  @Override
   protected void remove(String key) {
-    getCache(key).getAndRemove(key);
+    BinaryObject oldValue = getCache(key).getAndRemove(key);
+
+    if (oldValue == null) {
+      LOG.warn("Key '{}' not found for remove operation.", key);
+    }
 
     CompositeKey tagKey = new CompositeKey(key);
     Set<CompositeKey> tagSet = new HashSet<>();

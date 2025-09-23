@@ -20,6 +20,7 @@ public class CrudWorkload extends CoreWorkload {
     doTransactionInsert(db, threadState, keynum);
     doTransactionRead(db, threadState, keynum);
     doTransactionUpdate(db, threadState, keynum);
+    doTransactionRead(db, threadState, keynum);
     doTransactionDelete(db, threadState, keynum);
 
     threadState.incrementOps();

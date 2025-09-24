@@ -199,7 +199,7 @@ public class IgniteClient extends IgniteAbstractClient {
     Tuple tValue = Tuple.create(fieldCount);
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
-    getKvView(key).getAndPut(tx, tKey, tValue);
+    getKvView(key).put(tx, tKey, tValue);
   }
 
   /**

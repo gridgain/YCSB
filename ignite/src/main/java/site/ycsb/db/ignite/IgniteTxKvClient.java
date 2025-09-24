@@ -49,7 +49,7 @@ public class IgniteTxKvClient extends IgniteClient {
 
       txStart();
 
-      status = get(key, fields, result);
+      status = kvRead(key, fields, result);
 
       tx.commit();
 
@@ -85,7 +85,7 @@ public class IgniteTxKvClient extends IgniteClient {
       for (int i = 0; i < keys.size(); i++) {
         HashMap<String, ByteIterator> result = new HashMap<>();
 
-        Status status = get(keys.get(i), fields.get(i), result);
+        Status status = kvRead(keys.get(i), fields.get(i), result);
 
         if (!status.isOk()) {
           throw new TransactionException(String.format("Unable to read key %s", keys.get(i)));
@@ -124,7 +124,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      getAndPut(key, values);
+      kvUpdate(key, values);
 
       tx.commit();
 
@@ -156,7 +156,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      put(key, values);
+      kvInsert(key, values);
 
       tx.commit();
 
@@ -189,7 +189,7 @@ public class IgniteTxKvClient extends IgniteClient {
       txStart();
 
       for (int i = 0; i < keys.size(); i++) {
-        put(keys.get(i), values.get(i));
+        kvInsert(keys.get(i), values.get(i));
       }
 
       tx.commit();
@@ -222,7 +222,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      remove(key);
+      kvDelete(key);
 
       tx.commit();
 

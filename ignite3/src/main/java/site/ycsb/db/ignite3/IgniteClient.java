@@ -42,7 +42,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      put(null, key, values);
+      kvInsert(null, key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -82,7 +82,7 @@ public class IgniteClient extends IgniteAbstractClient {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
-      return get(null, key, fields, result);
+      return kvRead(null, key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -146,7 +146,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
-      getAndPut(null, key, values);
+      kvUpdate(null, key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -160,7 +160,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      remove(null, key);
+      kvDelete(null, key);
 
       return Status.OK;
     } catch (Exception e) {
@@ -171,13 +171,13 @@ public class IgniteClient extends IgniteAbstractClient {
   }
 
   /**
-   * Perform single put operation with key-value view.
+   * Perform single insert operation with key-value view.
    *
    * @param tx Transaction.
    * @param key Key.
    * @param values Values.
    */
-  protected void put(Transaction tx, String key, Map<String, ByteIterator> values) {
+  protected void kvInsert(Transaction tx, String key, Map<String, ByteIterator> values) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
 
     Tuple tValue = Tuple.create(fieldCount);
@@ -187,13 +187,13 @@ public class IgniteClient extends IgniteAbstractClient {
   }
 
   /**
-   * Perform single getAndPut operation with key-value view.
+   * Perform single update operation with key-value view.
    *
    * @param tx Transaction.
    * @param key Key.
    * @param values Values.
    */
-  protected void getAndPut(Transaction tx, String key, Map<String, ByteIterator> values) {
+  protected void kvUpdate(Transaction tx, String key, Map<String, ByteIterator> values) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
 
     Tuple tValue = Tuple.create(fieldCount);
@@ -203,14 +203,14 @@ public class IgniteClient extends IgniteAbstractClient {
   }
 
   /**
-   * Perform single get operation with key-value view.
+   * Perform single read operation with key-value view.
    *
    * @param tx Transaction.
    * @param key Key.
    * @param fields Fields.
    * @param result Result.
    */
-  protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
+  protected Status kvRead(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
     Tuple tValue = getKvView(key).get(tx, tKey);
 
@@ -241,7 +241,7 @@ public class IgniteClient extends IgniteAbstractClient {
    * @param tx Transaction.
    * @param key Key.
    */
-  protected void remove(Transaction tx, String key) {
+  protected void kvDelete(Transaction tx, String key) {
     getKvView(key).remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
   }
 }

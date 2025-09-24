@@ -46,7 +46,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      return get(key, fields, result);
+      return kvRead(key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -56,7 +56,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void put(String key, Map<String, ByteIterator> values) {
+  protected void kvInsert(String key, Map<String, ByteIterator> values) {
     BinaryObject binObj = convert(values);
     getCache(key).getAndPut(key, binObj);
 
@@ -68,7 +68,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected Status get(String key, Set<String> fields, Map<String, ByteIterator> result) {
+  protected Status kvRead(String key, Set<String> fields, Map<String, ByteIterator> result) {
     BinaryObject binObj = getCache(key).get(key);
 
     if (binObj == null) {
@@ -80,7 +80,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void getAndPut(String key, Map<String, ByteIterator> values) {
+  protected void kvUpdate(String key, Map<String, ByteIterator> values) {
     BinaryObject binObj = convert(values);
     BinaryObject oldValue = getCache(key).get(key);
     getCache(key).put(key, binObj);
@@ -97,7 +97,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void remove(String key) {
+  protected void kvDelete(String key) {
     BinaryObject oldValue = getCache(key).getAndRemove(key);
 
     if (oldValue == null) {

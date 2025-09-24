@@ -69,7 +69,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
-      return get(null, key, fields, result);
+      return kvRead(null, key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -79,7 +79,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void put(Transaction tx, String key, Map<String, ByteIterator> values) {
+  protected void kvInsert(Transaction tx, String key, Map<String, ByteIterator> values) {
     Tuple tValue = Tuple.create(fieldCount);
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
@@ -95,8 +95,8 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected Status get(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
-    Status status = super.get(tx, key, fields, result);
+  protected Status kvRead(Transaction tx, String key, Set<String> fields, Map<String, ByteIterator> result) {
+    Status status = super.kvRead(tx, key, fields, result);
 
     if (status == Status.NOT_FOUND) {
       LOG.warn("Key '{}' not found for get operation.", key);
@@ -107,7 +107,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void getAndPut(Transaction tx, String key, Map<String, ByteIterator> values) {
+  protected void kvUpdate(Transaction tx, String key, Map<String, ByteIterator> values) {
     Tuple tValue = Tuple.create(fieldCount);
     values.forEach((field, value) -> tValue.set(field, value.toString()));
 
@@ -128,7 +128,7 @@ public class IgniteCompositeTxKvClient extends IgniteTxKvClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void remove(Transaction tx, String key) {
+  protected void kvDelete(Transaction tx, String key) {
     Tuple tKey = Tuple.create(1).set(PRIMARY_COLUMN_NAME, key);
     Tuple oldValue = getKvView(key).getAndRemove(tx, tKey);
 

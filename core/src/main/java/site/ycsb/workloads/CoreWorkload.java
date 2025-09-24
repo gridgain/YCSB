@@ -924,7 +924,7 @@ public class CoreWorkload extends Workload {
 
   public void doTransactionUpdate(DB db, CoreWorkloadThreadState threadState) {
     // choose a random key
-    long keynum = transactioninsertkeysequence.nextValue();
+    long keynum = nextKeynum();
 
     doTransactionUpdate(db, threadState, keynum);
   }

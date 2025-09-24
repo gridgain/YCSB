@@ -242,6 +242,6 @@ public class IgniteClient extends IgniteAbstractClient {
    * @param key Key.
    */
   protected void kvDelete(Transaction tx, String key) {
-    getKvView(key).remove(null, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
+    getKvView(key).remove(tx, Tuple.create(1).set(PRIMARY_COLUMN_NAME, key));
   }
 }

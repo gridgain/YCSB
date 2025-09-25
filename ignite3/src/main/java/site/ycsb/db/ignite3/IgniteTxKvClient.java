@@ -35,7 +35,7 @@ public class IgniteTxKvClient extends IgniteClient {
   private static final Logger LOG = LogManager.getLogger(IgniteTxKvClient.class);
 
   /** Transaction. */
-  protected Transaction tx;
+  private Transaction tx;
 
   /** {@inheritDoc} */
   @Override

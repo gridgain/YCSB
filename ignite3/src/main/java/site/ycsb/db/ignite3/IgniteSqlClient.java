@@ -96,7 +96,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      return get(null, table, key, fields, result);
+      return sqlRead(null, table, key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -154,7 +154,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
-      modify(null, key, values);
+      sqlUpdate(null, key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -168,7 +168,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      put(null, key, values);
+      sqlInsert(null, key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -208,16 +208,8 @@ public class IgniteSqlClient extends AbstractSqlClient {
   /** {@inheritDoc} */
   @Override
   public Status delete(String table, String key) {
-    String deleteStatement = String.format(
-        "DELETE FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key
-    );
-
     try {
-      if (debug) {
-        LOG.info(deleteStatement);
-      }
-
-      ignite.sql().execute(null, deleteStatement).close();
+      sqlDelete(null, table, key);
 
       return Status.OK;
     } catch (Exception e) {
@@ -234,7 +226,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
    * @param key Key.
    * @param values Values.
    */
-  protected void put(Transaction tx, String key, Map<String, ByteIterator> values) {
+  protected void sqlInsert(Transaction tx, String key, Map<String, ByteIterator> values) {
     List<String> valuesList = new ArrayList<>();
     valuesList.add(key);
     valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
@@ -248,7 +240,7 @@ public class IgniteSqlClient extends AbstractSqlClient {
    * @param key Key.
    * @param values Values.
    */
-  protected void modify(Transaction tx, String key, Map<String, ByteIterator> values) {
+  protected void sqlUpdate(Transaction tx, String key, Map<String, ByteIterator> values) {
     if (updateAllFields) {
       List<String> valuesList = new ArrayList<>();
       valueFields.forEach(fieldName -> valuesList.add(String.valueOf(values.get(fieldName))));
@@ -280,7 +272,8 @@ public class IgniteSqlClient extends AbstractSqlClient {
    * @param result Result.
    */
   @NotNull
-  protected Status get(Transaction tx, String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
+  protected Status sqlRead(Transaction tx, String table, String key,
+                           Set<String> fields, Map<String, ByteIterator> result) {
     try (ResultSet<SqlRow> rs = ignite.sql().execute(tx, READ_STATEMENT.get(), key)) {
       if (!rs.hasNext()) {
         return Status.NOT_FOUND;
@@ -309,5 +302,24 @@ public class IgniteSqlClient extends AbstractSqlClient {
     }
 
     return Status.OK;
+  }
+
+  /**
+   * Perform single DELETE operation with Ignite SQL.
+   *
+   * @param tx Tx.
+   * @param table Table.
+   * @param key Key.
+   */
+  protected void sqlDelete(Transaction tx, String table, String key) {
+    String deleteStatement = String.format(
+        "DELETE FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key
+    );
+
+    if (debug) {
+      LOG.info(deleteStatement);
+    }
+
+    ignite.sql().execute(tx, deleteStatement).close();
   }
 }

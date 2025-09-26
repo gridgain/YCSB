@@ -51,7 +51,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
 
       txStart();
 
-      status = get(table, key, fields, result);
+      status = sqlRead(table, key, fields, result);
 
       tx.commit();
 
@@ -87,7 +87,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       for (int i = 0; i < keys.size(); i++) {
         HashMap<String, ByteIterator> result = new HashMap<>();
 
-        Status status = get(table, keys.get(i), fields.get(i), result);
+        Status status = sqlRead(table, keys.get(i), fields.get(i), result);
 
         if (!status.isOk()) {
           throw new IgniteException("Error reading batch of keys.");
@@ -128,7 +128,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       try {
         txStart();
 
-        modify(table, key, values);
+        sqlUpdate(table, key, values);
 
         tx.commit();
 
@@ -161,7 +161,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
     try {
       txStart();
 
-      put(table, key, values);
+      sqlInsert(table, key, values);
 
       tx.commit();
 
@@ -194,7 +194,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       txStart();
 
       for (int i = 0; i < keys.size(); i++) {
-        put(table, keys.get(i), values.get(i));
+        sqlInsert(table, keys.get(i), values.get(i));
       }
 
       tx.commit();
@@ -227,7 +227,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
     try {
       txStart();
 
-      remove(table, key);
+      sqlDelete(table, key);
 
       tx.commit();
 

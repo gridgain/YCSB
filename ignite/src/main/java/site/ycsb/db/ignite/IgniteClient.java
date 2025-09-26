@@ -64,9 +64,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
-      BinaryObject binObj = getCache(key).get(key);
-
-      return convert(binObj, fields, result);
+      return kvRead(key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -107,7 +105,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
-      getCache(key).invoke(key, new Updater(values));
+      kvUpdate(key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -121,9 +119,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      BinaryObject binObj = convert(values);
-
-      getCache(key).put(key, binObj);
+      kvInsert(key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -159,7 +155,7 @@ public class IgniteClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      getCache(key).remove(key);
+      kvDelete(key);
 
       return Status.OK;
     } catch (Exception e) {
@@ -257,5 +253,47 @@ public class IgniteClient extends IgniteAbstractClient {
 
       return null;
     }
+  }
+
+  /**
+   * Perform single insert operation with key-value view.
+   *
+   * @param key Key.
+   * @param values Values.
+   */
+  protected void kvInsert(String key, Map<String, ByteIterator> values) {
+    BinaryObject binObj = convert(values);
+    getCache(key).put(key, binObj);
+  }
+
+  /**
+   * Perform single update operation with key-value view.
+   *
+   * @param key Key.
+   * @param values Values.
+   */
+  protected void kvUpdate(String key, Map<String, ByteIterator> values) {
+    getCache(key).invoke(key, new Updater(values));
+  }
+
+  /**
+   * Perform single read operation with key-value view.
+   *
+   * @param key Key.
+   * @param fields Fields.
+   * @param result Result.
+   */
+  protected Status kvRead(String key, Set<String> fields, Map<String, ByteIterator> result) {
+    BinaryObject binObj = getCache(key).get(key);
+    return convert(binObj, fields, result);
+  }
+
+  /**
+   * Perform single delete operation with key-value view.
+   *
+   * @param key Key.
+   */
+  protected void kvDelete(String key) {
+    getCache(key).remove(key);
   }
 }

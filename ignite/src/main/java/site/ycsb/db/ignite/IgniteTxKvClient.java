@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,13 +45,15 @@ public class IgniteTxKvClient extends IgniteClient {
   @Override
   public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     try {
+      Status status;
+
       txStart();
 
-      BinaryObject binObj = getCache(key).get(key);
+      status = kvRead(key, fields, result);
 
       tx.commit();
 
-      return convert(binObj, fields, result);
+      return status;
     } catch (CacheException cacheEx) {
       if (cacheEx.getCause() != null && cacheEx.getCause() instanceof TransactionTimeoutException
           && cacheEx.getCause().getCause() instanceof TransactionDeadlockException) {
@@ -81,17 +83,15 @@ public class IgniteTxKvClient extends IgniteClient {
       txStart();
 
       for (int i = 0; i < keys.size(); i++) {
-        BinaryObject binObj = getCache(keys.get(i)).get(keys.get(i));
+        HashMap<String, ByteIterator> result = new HashMap<>();
 
-        Map<String, ByteIterator> record = new HashMap<>();
-
-        Status status = convert(binObj, fields.get(i), record);
+        Status status = kvRead(keys.get(i), fields.get(i), result);
 
         if (!status.isOk()) {
-          throw new IgniteException("Error reading batch of keys.");
+          throw new TransactionException(String.format("Unable to read key %s", keys.get(i)));
         }
 
-        results.add(record);
+        results.add(result);
       }
 
       tx.commit();
@@ -124,7 +124,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      getCache(key).invoke(key, new IgniteClient.Updater(values));
+      kvUpdate(key, values);
 
       tx.commit();
 
@@ -156,9 +156,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      BinaryObject binObj = convert(values);
-
-      getCache(key).put(key, binObj);
+      kvInsert(key, values);
 
       tx.commit();
 
@@ -191,9 +189,7 @@ public class IgniteTxKvClient extends IgniteClient {
       txStart();
 
       for (int i = 0; i < keys.size(); i++) {
-        BinaryObject binObj = convert(values.get(i));
-
-        getCache(keys.get(i)).put(keys.get(i), binObj);
+        kvInsert(keys.get(i), values.get(i));
       }
 
       tx.commit();
@@ -226,7 +222,7 @@ public class IgniteTxKvClient extends IgniteClient {
     try {
       txStart();
 
-      getCache(key).remove(key);
+      kvDelete(key);
 
       tx.commit();
 

@@ -52,7 +52,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
     try {
-      return get(table, key, fields, result);
+      return sqlRead(table, key, fields, result);
     } catch (Exception e) {
       LOG.error(String.format("Error reading key: %s", key), e);
 
@@ -66,7 +66,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
                        Map<String, ByteIterator> values) {
     while (true) {
       try {
-        modify(table, key, values);
+        sqlUpdate(table, key, values);
 
         return Status.OK;
       } catch (CacheException e) {
@@ -87,7 +87,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     try {
-      put(table, key, values);
+      sqlInsert(table, key, values);
 
       return Status.OK;
     } catch (Exception e) {
@@ -101,7 +101,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
   @Override
   public Status delete(String table, String key) {
     try {
-      remove(table, key);
+      sqlDelete(table, key);
 
       return Status.OK;
     } catch (Exception e) {
@@ -196,7 +196,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
    * @param key Key.
    * @param values Values.
    */
-  protected void put(String table, String key, Map<String, ByteIterator> values) {
+  protected void sqlInsert(String table, String key, Map<String, ByteIterator> values) {
     InsertData insertData = new InsertData(key, values);
     StringBuilder sb = new StringBuilder("INSERT INTO ").append(table).append(" (")
         .append(insertData.getInsertFields()).append(") VALUES (")
@@ -217,7 +217,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
    * @param result Result.
    */
   @NotNull
-  protected Status get(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
+  protected Status sqlRead(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
     StringBuilder sb = new StringBuilder("SELECT * FROM ").append(table)
         .append(" WHERE ").append(PRIMARY_KEY).append("=?");
 
@@ -265,7 +265,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
    * @param key Key.
    * @param values Values.
    */
-  protected void modify(String table, String key, Map<String, ByteIterator> values) {
+  protected void sqlUpdate(String table, String key, Map<String, ByteIterator> values) {
     UpdateData updData = new UpdateData(key, values);
     StringBuilder sb = new StringBuilder("UPDATE ").append(table).append(" SET ");
 
@@ -290,7 +290,7 @@ public class IgniteSqlClient extends IgniteAbstractClient {
    * @param table Table.
    * @param key Key.
    */
-  protected void remove(String table, String key) {
+  protected void sqlDelete(String table, String key) {
     StringBuilder sb = new StringBuilder("DELETE FROM ").append(table)
         .append(" WHERE ").append(PRIMARY_KEY).append(" = ?");
 

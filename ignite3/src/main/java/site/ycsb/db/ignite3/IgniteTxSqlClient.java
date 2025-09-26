@@ -45,7 +45,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
 
       tx = ignite.transactions().begin(txOptions);
 
-      status = get(tx, table, key, fields, result);
+      status = sqlRead(tx, table, key, fields, result);
 
       tx.commit();
 
@@ -72,7 +72,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       for (int i = 0; i < keys.size(); i++) {
         HashMap<String, ByteIterator> result = new HashMap<>();
 
-        Status status = get(tx, table, keys.get(i), fields.get(i), result);
+        Status status = sqlRead(tx, table, keys.get(i), fields.get(i), result);
 
         if (!status.isOk()) {
           throw new TransactionException(-1, String.format("Unable to read key %s", keys.get(i)));
@@ -102,7 +102,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
     try {
       tx = ignite.transactions().begin(txOptions);
 
-      modify(tx, key, values);
+      sqlUpdate(tx, key, values);
 
       tx.commit();
 
@@ -125,7 +125,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
     try {
       tx = ignite.transactions().begin(txOptions);
 
-      put(tx, key, values);
+      sqlInsert(tx, key, values);
 
       tx.commit();
 
@@ -149,7 +149,7 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
       tx = ignite.transactions().begin(txOptions);
 
       for (int i = 0; i < keys.size(); i++) {
-        put(tx, keys.get(i), values.get(i));
+        sqlInsert(tx, keys.get(i), values.get(i));
       }
 
       tx.commit();
@@ -170,18 +170,10 @@ public class IgniteTxSqlClient extends IgniteSqlClient {
   /** {@inheritDoc} */
   @Override
   public Status delete(String table, String key) {
-    String deleteStatement = String.format(
-        "DELETE FROM %s WHERE %s = '%s'", table, PRIMARY_COLUMN_NAME, key
-    );
-
     try {
-      if (debug) {
-        LOG.info(deleteStatement);
-      }
-
       tx = ignite.transactions().begin(txOptions);
 
-      ignite.sql().execute(tx, deleteStatement).close();
+      sqlDelete(tx, table, key);
 
       tx.commit();
 

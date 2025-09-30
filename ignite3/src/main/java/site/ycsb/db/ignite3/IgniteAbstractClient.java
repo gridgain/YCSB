@@ -73,6 +73,8 @@ public abstract class IgniteAbstractClient extends DB {
 
   protected static final String NODES_FILTER_ATTRIBUTE = "ycsbFilter";
 
+  public static final String CREATE_TEST_TABLES_PROPERTY = "createtesttables";
+
   private static final Logger LOG = LogManager.getLogger(IgniteAbstractClient.class);
 
   protected String zoneName;
@@ -128,7 +130,7 @@ public abstract class IgniteAbstractClient extends DB {
   /**
    * Whether to perform "run" phase ({@code true}) or "load" phase ({@code false}).
    */
-  protected static boolean isRunPhase;
+  protected static boolean createTestTables;
 
   /**
    * Whether to shut down externally provided Ignite instance.
@@ -222,7 +224,7 @@ public abstract class IgniteAbstractClient extends DB {
       if (!initCompleted) {
         initIgnite(useEmbeddedIgnite);
 
-        if (!isRunPhase) {
+        if (createTestTables) {
           createZone();
 
           createTables();
@@ -245,7 +247,13 @@ public abstract class IgniteAbstractClient extends DB {
   public void initProperties(Properties properties) throws DBException {
     try {
       debug = IgniteParam.DEBUG.getValue(properties);
-      isRunPhase = Boolean.parseBoolean(properties.getProperty(DO_TRANSACTIONS_PROPERTY, "true"));
+
+      if (properties.getProperty(CREATE_TEST_TABLES_PROPERTY) != null) {
+        createTestTables = Boolean.parseBoolean(properties.getProperty(CREATE_TEST_TABLES_PROPERTY, "true"));
+      } else {
+        createTestTables = !Boolean.parseBoolean(properties.getProperty(DO_TRANSACTIONS_PROPERTY, "false"));
+      }
+
       shutdownExternalIgnite = IgniteParam.SHUTDOWN_IGNITE.getValue(properties);
       useEmbeddedIgnite = IgniteParam.USE_EMBEDDED.getValue(properties);
       disableFsync = IgniteParam.DISABLE_FSYNC.getValue(properties);

@@ -1,0 +1,27 @@
+# Throughput scenario with single operations using JDBC API
+#
+# Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
+# Request distribution: sequential
+# Threads per client: 64
+
+workload=site.ycsb.workloads.CoreWorkload
+db=site.ycsb.db.ignite3.IgniteJdbcClient
+
+recordcount=40m
+warmupops=10m
+operationcount=100m
+
+threadcount=64
+
+readproportion=1
+updateproportion=0
+scanproportion=0
+insertproportion=0
+
+readallfields=true
+dataintegrity=true
+requestdistribution=sequential
+
+status=true
+status.interval=1
+measurementtype=timeseries

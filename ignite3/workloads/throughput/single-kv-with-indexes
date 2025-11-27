@@ -1,0 +1,29 @@
+# Throughput scenario with single operations using KeyValue API with additional indexed fields
+#
+# Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
+# Number of secondary indexes: 5
+# Request distribution: sequential
+# Threads per client: 64
+
+workload=site.ycsb.workloads.CoreWorkload
+db=site.ycsb.db.ignite3.IgniteClient
+
+recordcount=40m
+warmupops=10m
+operationcount=200m
+indexcount=5
+
+threadcount=64
+
+readproportion=1
+updateproportion=0
+scanproportion=0
+insertproportion=0
+
+readallfields=true
+dataintegrity=true
+requestdistribution=sequential
+
+status=true
+status.interval=1
+measurementtype=timeseries

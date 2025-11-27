@@ -1,0 +1,32 @@
+# Throughput scenario with sets of single KeyValue API operations wrapped in explicit transactions
+#
+# Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
+# Number of single operations per explicit TX: 5
+# Request distribution: sequential
+# Threads per client: 64
+
+workload=site.ycsb.workloads.CoreWorkload
+db=site.ycsb.db.ignite3.IgniteTxKvClient
+
+recordcount=40m
+batchsize=5
+# 'warmupops' and 'operationcount' are number of explicit transactions,
+# each explicit transaction contains a sets of 'batchsize' single operations,
+# number of processed records evaluate as 'warmupops' * 'batchsize' and 'operationcount' * 'batchsize'
+warmupops=2m
+operationcount=20m
+
+threadcount=64
+
+readproportion=1
+updateproportion=0
+scanproportion=0
+insertproportion=0
+
+readallfields=true
+dataintegrity=true
+requestdistribution=sequential
+
+status=true
+status.interval=1
+measurementtype=timeseries

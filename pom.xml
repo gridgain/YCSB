@@ -72,8 +72,7 @@ LICENSE file.
     <repository>
       <id>gridgain-private</id>
       <name>GridGain Private Maven Repository</name>
-      <!-- FIXME: https://ggsystems.atlassian.net/browse/QA-5791 -->
-      <url>https://gg-nexus2-01.gridgain.com/nexus/content/repositories/gridgain-private/</url>
+      <url>https://gridgainsystems.com/nexus/content/repositories/gridgain-private/</url>
     </repository>
   </distributionManagement>
   <dependencyManagement>
@@ -127,7 +126,7 @@ LICENSE file.
     <hbase2.version>2.2.3</hbase2.version>
     <gridgain.version>8.8.34</gridgain.version>
     <ignite.version>2.11.1</ignite.version>
-    <ignite3.version>3.1.0-SNAPSHOT</ignite3.version>
+    <ignite3.version>3.2.0-SNAPSHOT</ignite3.version>
     <gridgain9.version>9.1.127-SNAPSHOT</gridgain9.version>
     <infinispan.version>7.2.2.Final</infinispan.version>
     <kudu.version>1.11.1</kudu.version>

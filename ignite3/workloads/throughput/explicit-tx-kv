@@ -29,4 +29,3 @@ requestdistribution=sequential
 
 status=true
 status.interval=1
-measurementtype=timeseries

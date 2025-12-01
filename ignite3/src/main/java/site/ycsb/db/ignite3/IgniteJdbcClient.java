@@ -139,16 +139,13 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     super.init();
 
     String hostsStr = useEmbeddedIgnite ?
-        ignite.clusterNodes().stream()
+        ignite.cluster().nodes().stream()
             .map(clusterNode -> clusterNode.address().host())
             .collect(Collectors.joining(",")) :
         hosts;
 
-    //workaround for https://ggsystems.atlassian.net/browse/IGN-23887
-    //use only one cluster node address for connection
-    hostsStr = hostsStr.split(",")[0];
-
     String url = "jdbc:ignite:thin://" + hostsStr;
+
     try {
       CONN.set(DriverManager.getConnection(url));
     } catch (Exception e) {

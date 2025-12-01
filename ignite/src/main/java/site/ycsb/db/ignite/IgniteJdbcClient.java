@@ -97,6 +97,7 @@ public class IgniteJdbcClient extends IgniteAbstractClient {
     }
 
     String url = "jdbc:ignite:thin://" + hostsStr;
+
     try {
       return DriverManager.getConnection(url);
     } catch (Exception e) {

@@ -27,8 +27,8 @@ $GRIDGAIN\_DISTRIBUTION/lib can be a folder in the GridGain DB distribution or t
 
 ## 2. Start your GridGain 9 cluster
 
-You need a running GridGain 9 (or Apache Ignite 3\) cluster to benchmark against. For setup, you can refer to the [“Getting Started” guide](https://www.gridgain.com/docs/gridgain9/latest/quick-start/getting-started-guide). If [using Docker](https://www.gridgain.com/docs/gridgain9/latest/installation/installing-using-docker), GridGain provides docker images and docker-compose setups that simplify starting a cluster.  
-**Note**: The cluster configuration is out of scope of this guide \- assume your cluster is up and reachable by the benchmark client.
+You need a running GridGain 9 (or Apache Ignite 3) cluster to benchmark against. For setup, you can refer to the [“Getting Started” guide](https://www.gridgain.com/docs/gridgain9/latest/quick-start/getting-started-guide). If [using Docker](https://www.gridgain.com/docs/gridgain9/latest/installation/installing-using-docker), GridGain provides docker images and docker-compose setups that simplify starting a cluster.  
+**Note**: The cluster configuration is out of scope of this guide - assume your cluster is up and reachable by the benchmark client.
 
 ## 3. Run the benchmark
 
@@ -68,11 +68,11 @@ The YCSB benchmark performs in two steps (phases):
 
 | Property | Description | Default value |
 | :---- | :---- | :---- |
-| recordcount | Number or records to insert on load phase or number of records to use on run (transactions) phase. | 1000 |
+| recordcount | Number of records to insert on load phase or number of records to use on run (transactions) phase. | 1000 |
 | operationcount | Number of operations to perform on run (transactions) phase.  | 1000 |
-| warmupops | Number or operations to perform as a warmup before the payload. These operations will not be included in the result statistics. | 0 |
+| warmupops | Number of operations to perform as a warmup before the payload. These operations will not be included in the result statistics. | 0 |
 | batchsize | Number of processed records within a batch operation if a client supports batches. | 1 |
-| threadcount | Number of parallel threads that will perform operations from the client instance.. | 1 |
+| threadcount | Number of parallel threads that will perform operations from the client instance. | 1 |
 | fieldcount | Number of data fields, excluding the key field. | 10 |
 | fieldlength | Size of each data field in bytes. | 100 |
 
@@ -109,9 +109,9 @@ A typical YCSB run is divided into distinct parts, each labeled in the output.
 * `[PAYLOAD]`  
   This is the main measurement part. All statistics for throughput and latency are derived solely from this period. The operations count here defines the actual workload volume for the benchmark.  
 * `[OPERATION TYPE]`  
-  The results are then broken down by the type of database operation (e.g., `[INSERT]`, `[READ],[UPDATE],[DELETE]`, etc). You will see a separate block for each operation type defined in your workload file.
+  The results are then broken down by the type of database operation (e.g., `[INSERT]`, `[READ], [UPDATE], [DELETE]`, etc). You will see a separate block for each operation type defined in your workload file.
 
-Let's see at the provided metrics:
+Let's look at the provided metrics:
 
 * `[PAYLOAD], Throughput(ops/sec)`  
   The overall throughput for all operation types in the payload period. A higher throughput is generally better, but never view it in isolation. It must be analyzed alongside latency metrics.  
@@ -122,5 +122,5 @@ Let's see at the provided metrics:
 * `MinLatency(us) / MaxLatency(us)`  
   The absolute best- and worst-case latency times observed.  
 * `95thPercentileLatency(us) / 99thPercentileLatency(us)`  
-  The mean latency for the 95% / 99% of all operations. Gives understanding of real-world performance. Represents the "typical" performance for most users, excluding the worst 5% (in case of `95thPercentileLatency`) or 1% (in case of `99thPercentileLatency`).
+  The latency for the 95% / 99% of all operations. Gives understanding of real-world performance. Represents the "typical" performance for most users, excluding the worst 5% (in case of `95thPercentileLatency`) or 1% (in case of `99thPercentileLatency`).
 

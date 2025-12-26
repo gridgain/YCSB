@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import site.ycsb.ByteArrayByteIterator;
 import site.ycsb.ByteIterator;
 import site.ycsb.Status;
 
@@ -34,7 +35,7 @@ public class LargeObjectsWorkload extends CoreWorkload {
         System.arraycopy(sig, 0, valueBytes, 0, prefixLen);
       }
 
-      values.put(fieldKey, new ByteArrayIterator(valueBytes));
+      values.put(fieldKey, new ByteArrayByteIterator(valueBytes));
     }
 
     return values;
@@ -49,7 +50,14 @@ public class LargeObjectsWorkload extends CoreWorkload {
     if (!cells.isEmpty()) {
       for (Map.Entry<String, ByteIterator> e : cells.entrySet()) {
         String fieldKey = e.getKey();
-        byte[] returned = e.getValue().toArray();
+        ByteIterator fieldValue = e.getValue();
+
+        // Ensure we verify against the full array if the iterator was partially read.
+        if (fieldValue instanceof ByteArrayByteIterator) {
+          fieldValue.reset();
+        }
+
+        byte[] returned = fieldValue.toArray();
 
         if (returned.length == 0) {
           verifyStatus = Status.ERROR;
@@ -99,41 +107,5 @@ public class LargeObjectsWorkload extends CoreWorkload {
 
         return buf;
       });
-  }
-
-  /** Lightweight ByteIterator over a byte[]. */
-  private static final class ByteArrayIterator extends ByteIterator {
-    private final byte[] data;
-    private int index;
-
-    ByteArrayIterator(byte[] data) {
-      this.data = data;
-      this.index = 0;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return index < data.length;
-    }
-
-    @Override
-    public byte nextByte() {
-      return data[index++];
-    }
-
-    @Override
-    public long bytesLeft() {
-      return data.length - index;
-    }
-
-    @Override
-    public byte[] toArray() {
-      return Arrays.copyOfRange(data, index, data.length);
-    }
-
-    @Override
-    public String toString() {
-      return new String(data, index, data.length - index, StandardCharsets.UTF_8);
-    }
   }
 }

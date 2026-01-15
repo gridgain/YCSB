@@ -149,10 +149,8 @@ public class ClientThread implements Runnable {
     // and the client thread have the same view on time.
 
     //spread the thread operations out so they don't all hit the DB at the same time
-    // GH issue 4 - throws exception if _target>1 because random.nextInt argument must be >0
-    // and the sleep() doesn't make sense for granularities < 1 ms anyway
     if ((targetOpsPerMs > 0) && (targetOpsPerMs <= 1.0)) {
-      long randomMinorDelay = ThreadLocalRandom.current().nextInt((int) targetOpsTickNs);
+      long randomMinorDelay = ThreadLocalRandom.current().nextLong(targetOpsTickNs);
       sleepUntil(System.nanoTime() + randomMinorDelay);
     }
     try {

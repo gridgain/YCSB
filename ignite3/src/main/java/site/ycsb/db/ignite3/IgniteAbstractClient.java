@@ -35,7 +35,6 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServer;
 import org.apache.ignite.InitParameters;
@@ -460,20 +459,28 @@ public abstract class IgniteAbstractClient extends DB {
         secondaryStorageProfile;
 
     String storageProfiles = useColumnar ?
-        String.join(",", storageProfile, secondaryStorageProfile) :
+        String.join("', '", storageProfile, secondaryStorageProfile) :
         storageProfile;
 
-    String paramStorageProfiles = String.format("STORAGE_PROFILES='%s'", storageProfiles);
-    String paramReplicas = replicas.isEmpty() ? "" : "replicas=" + replicas;
-    String paramPartitions = partitions.isEmpty() ? "" : "partitions=" + partitions;
-    String paramNodesFilter = nodesFilter.isEmpty() ? "" :
-        String.format("DATA_NODES_FILTER='$[?(@.%s == \"%s\")]'", NODES_FILTER_ATTRIBUTE, nodesFilter);
-    String params = Stream.of(paramStorageProfiles, paramReplicas, paramPartitions, paramNodesFilter)
-        .filter(s -> !s.isEmpty())
-        .collect(Collectors.joining(", "));
-    String reqWithParams = params.isEmpty() ? "" : " WITH " + params;
+    List<String> params = new ArrayList<>();
 
-    return String.format("CREATE ZONE IF NOT EXISTS %s%s;", zoneName, reqWithParams);
+    if (!replicas.isEmpty()) {
+      params.add("replicas " + replicas);
+    }
+
+    if (!partitions.isEmpty()) {
+      params.add("partitions " + partitions);
+    }
+
+    if (!nodesFilter.isEmpty()) {
+      params.add(String.format("NODES FILTER '$[?(@.%s == \"%s\")]'", NODES_FILTER_ATTRIBUTE, nodesFilter));
+    }
+
+    String paramsStr = params.isEmpty() ? "" : " (" + String.join(", ", params) + ")";
+
+    String storageProfilesStr = String.format(" STORAGE PROFILES ['%s']", storageProfiles);
+
+    return String.format("CREATE ZONE IF NOT EXISTS %s%s%s;", zoneName, paramsStr, storageProfilesStr);
   }
 
   /**

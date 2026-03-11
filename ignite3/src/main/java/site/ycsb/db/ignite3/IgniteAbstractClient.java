@@ -45,6 +45,7 @@ import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
+import org.apache.ignite.tx.Transaction;
 import org.apache.ignite.tx.TransactionOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -383,7 +384,7 @@ public abstract class IgniteAbstractClient extends DB {
       String createTableReq = sqlList.get(i);
 
       LOG.info("Creating table '{}'. SQL line: {}", tableName, createTableReq);
-      ignite.sql().execute(null, createTableReq).close();
+      ignite.sql().execute((Transaction) null, createTableReq).close();
 
       boolean cachePresent = waitForCondition(() -> ignite.tables().table(tableName) != null,
           TABLE_CREATION_TIMEOUT_SECONDS * 1_000L);
@@ -440,7 +441,7 @@ public abstract class IgniteAbstractClient extends DB {
 
     if (!createZoneReq.isEmpty()) {
       LOG.info("Creating zone. SQL line: {}", createZoneReq);
-      ignite.sql().execute(null, createZoneReq).close();
+      ignite.sql().execute((Transaction) null, createZoneReq).close();
     }
   }
 
@@ -487,7 +488,7 @@ public abstract class IgniteAbstractClient extends DB {
 
       sqlList.forEach(idxReq -> {
           LOG.info("SQL line: {}", idxReq);
-          ignite.sql().execute(null, idxReq).close();
+          ignite.sql().execute((Transaction) null, idxReq).close();
         });
     }
   }
@@ -533,7 +534,7 @@ public abstract class IgniteAbstractClient extends DB {
   private static long entriesInTable(Ignite ignite0, String tableName) throws DBException {
     long entries = 0L;
 
-    try (ResultSet<SqlRow> res = ignite0.sql().execute(null, "SELECT COUNT(*) FROM " + tableName)) {
+    try (ResultSet<SqlRow> res = ignite0.sql().execute((Transaction) null, "SELECT COUNT(*) FROM " + tableName)) {
       while (res.hasNext()) {
         SqlRow row = res.next();
 

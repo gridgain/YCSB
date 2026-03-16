@@ -153,12 +153,14 @@ public class IgniteClient extends IgniteAbstractClient {
     try {
       Set<String> cols = (fields == null || fields.isEmpty()) ? new HashSet<>(valueFields) : fields;
 
-      String columnList = PRIMARY_COLUMN_NAME + ", " + String.join(", ", cols);
+      String columnList = cols.isEmpty()
+          ? PRIMARY_COLUMN_NAME
+          : PRIMARY_COLUMN_NAME + ", " + String.join(", ", cols);
 
       // There is no 'scan' operation in key-value view, so we need to execute SQL query.
       String sql = String.format(
           "SELECT %s FROM %s WHERE %s >= ? ORDER BY %s LIMIT ?",
-          columnList, table, PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME);
+          columnList, getTableName(startkey), PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME);
 
       try (ResultSet<SqlRow> rs = ignite.sql().execute((Transaction) null, sql, startkey, recordcount)) {
         while (rs.hasNext()) {

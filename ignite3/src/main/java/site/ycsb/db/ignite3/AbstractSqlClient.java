@@ -125,8 +125,11 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
       deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?",
           tableNamePrefix, PRIMARY_COLUMN_NAME);
 
-      scanPreparedStatementString = String.format("SELECT * FROM %s WHERE %s >= ? ORDER BY %s LIMIT ?",
-          tableNamePrefix, PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME);
+      scanPreparedStatementString = useColumnar ?
+          String.format("SELECT * FROM %s /*+ use_secondary_storage */ WHERE %s >= ? ORDER BY %s LIMIT ?",
+              tableNamePrefix, PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME) :
+          String.format("SELECT * FROM %s WHERE %s >= ? ORDER BY %s LIMIT ?",
+              tableNamePrefix, PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME);
     }
   }
 

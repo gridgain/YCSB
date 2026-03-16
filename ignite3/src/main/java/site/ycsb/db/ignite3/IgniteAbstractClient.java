@@ -632,4 +632,17 @@ public abstract class IgniteAbstractClient extends DB {
 
     return kvViews.get(index);
   }
+
+  /**
+   * Get table name for key.
+   *
+   * @param key Key.
+   */
+  protected String getTableName(String key) {
+    int index = tableCount <= 1
+        ? 0 //skip the key processing in case of 1 test table
+        : (int) (Long.parseLong(key.substring(4)) % tableCount); //CoreWorkload uses key hash with prefix "user"
+
+    return tableNames.get(index);
+  }
 }

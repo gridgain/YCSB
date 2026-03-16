@@ -17,12 +17,16 @@
 package site.ycsb.db.ignite3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Vector;
+import org.apache.ignite.sql.ResultSet;
+import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.tx.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -137,6 +141,45 @@ public class IgniteClient extends IgniteAbstractClient {
       return Status.OK;
     } catch (Exception e) {
       LOG.error("Error reading batch of keys.", e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status scan(String table, String startkey, int recordcount,
+      Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+    try {
+      Set<String> cols = (fields == null || fields.isEmpty()) ? new HashSet<>(valueFields) : fields;
+
+      String columnList = PRIMARY_COLUMN_NAME + ", " + String.join(", ", cols);
+
+      // There is no 'scan' operation in key-value view, so we need to execute SQL query.
+      String sql = String.format(
+          "SELECT %s FROM %s WHERE %s >= ? ORDER BY %s LIMIT ?",
+          columnList, table, PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME);
+
+      try (ResultSet<SqlRow> rs = ignite.sql().execute((Transaction) null, sql, startkey, recordcount)) {
+        while (rs.hasNext()) {
+          SqlRow row = rs.next();
+          HashMap<String, ByteIterator> rowResult = new LinkedHashMap<>();
+
+          for (String column : cols) {
+            String val = row.stringValue(column);
+
+            if (val != null) {
+              rowResult.put(column, new StringByteIterator(val));
+            }
+          }
+
+          result.add(rowResult);
+        }
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error scanning from key: %s", startkey), e);
 
       return Status.ERROR;
     }

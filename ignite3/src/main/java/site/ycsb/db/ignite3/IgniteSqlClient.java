@@ -17,11 +17,13 @@
 package site.ycsb.db.ignite3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import org.apache.ignite.sql.BatchedArguments;
 import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
@@ -61,6 +63,10 @@ public class IgniteSqlClient extends AbstractSqlClient {
   private static final ThreadLocal<Statement> UPDATE_ALL_FIELDS_STATEMENT = ThreadLocal
       .withInitial(IgniteSqlClient::buildUpdateAllStatement);
 
+  /** Statement for scanning values. */
+  private static final ThreadLocal<Statement> SCAN_STATEMENT = ThreadLocal
+      .withInitial(IgniteSqlClient::buildScanStatement);
+
   /** Build statement for reading values. */
   private static Statement buildReadStatement() {
     return ignite.sql().createStatement(readPreparedStatementString);
@@ -90,6 +96,11 @@ public class IgniteSqlClient extends AbstractSqlClient {
   /** Build statement for inserting values. */
   private static Statement buildUpdateAllStatement() {
     return ignite.sql().createStatement(updateAllFieldsPreparedStatementString);
+  }
+
+  /** Build statement for scanning values. */
+  private static Statement buildScanStatement() {
+    return ignite.sql().createStatement(scanPreparedStatementString);
   }
 
   /** {@inheritDoc} */
@@ -145,6 +156,38 @@ public class IgniteSqlClient extends AbstractSqlClient {
       return Status.OK;
     } catch (Exception e) {
       LOG.error("Error reading batch of keys.", e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Status scan(String table, String startkey, int recordcount, Set<String> fields,
+                     Vector<HashMap<String, ByteIterator>> result) {
+    try {
+      Set<String> cols = (fields == null || fields.isEmpty()) ? new HashSet<>(valueFields) : fields;
+
+      try (ResultSet<SqlRow> rs = ignite.sql().execute((Transaction) null, SCAN_STATEMENT.get(), startkey, recordcount)) {
+        while (rs.hasNext()) {
+          SqlRow row = rs.next();
+          HashMap<String, ByteIterator> rowResult = new LinkedHashMap<>();
+
+          for (String column : cols) {
+            String val = row.stringValue(column);
+
+            if (val != null) {
+              rowResult.put(column, new StringByteIterator(val));
+            }
+          }
+
+          result.add(rowResult);
+        }
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      LOG.error(String.format("Error scanning from key: %s", startkey), e);
 
       return Status.ERROR;
     }

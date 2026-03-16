@@ -57,6 +57,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
   /** SQL string of prepared statement for deleting values. */
   protected static String deletePreparedStatementString;
 
+  /** SQL string of prepared statement for scanning values. */
+  protected static String scanPreparedStatementString;
+
   /** Batch size. */
   protected static int batchSize;
 
@@ -121,6 +124,9 @@ public abstract class AbstractSqlClient extends IgniteAbstractClient {
 
       deletePreparedStatementString = String.format("DELETE * FROM %s WHERE %s = ?",
           tableNamePrefix, PRIMARY_COLUMN_NAME);
+
+      scanPreparedStatementString = String.format("SELECT * FROM %s WHERE %s >= ? ORDER BY %s LIMIT ?",
+          tableNamePrefix, PRIMARY_COLUMN_NAME, PRIMARY_COLUMN_NAME);
     }
   }
 

@@ -168,7 +168,8 @@ public class IgniteSqlClient extends AbstractSqlClient {
     try {
       Set<String> cols = (fields == null || fields.isEmpty()) ? new HashSet<>(valueFields) : fields;
 
-      try (ResultSet<SqlRow> rs = ignite.sql().execute((Transaction) null, SCAN_STATEMENT.get(), startkey, recordcount)) {
+      try (ResultSet<SqlRow> rs = ignite.sql()
+          .execute((Transaction) null, SCAN_STATEMENT.get(), startkey, recordcount)) {
         while (rs.hasNext()) {
           SqlRow row = rs.next();
           HashMap<String, ByteIterator> rowResult = new LinkedHashMap<>();

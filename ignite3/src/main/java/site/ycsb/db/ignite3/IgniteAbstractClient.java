@@ -412,10 +412,13 @@ public abstract class IgniteAbstractClient extends DB {
     String zoneSpecs = getZoneSpecs();
     List<String> sqlList = new ArrayList<>();
 
+    String usingIndexType = indexType != null && !indexType.isEmpty() ? " USING " + indexType.toUpperCase() : "";
+    String primaryKeySpec = String.format("PRIMARY KEY%s (%s)", usingIndexType, PRIMARY_COLUMN_NAME);
+
     for (String tableName : tableNames) {
       sqlList.add(String.format(
-          "CREATE TABLE IF NOT EXISTS %s(%s VARCHAR PRIMARY KEY, %s)%s",
-          tableName, PRIMARY_COLUMN_NAME, fieldsSpecs, zoneSpecs));
+          "CREATE TABLE IF NOT EXISTS %s(%s VARCHAR, %s, %s)%s",
+          tableName, PRIMARY_COLUMN_NAME, fieldsSpecs, primaryKeySpec, zoneSpecs));
     }
 
     return sqlList;
@@ -654,5 +657,18 @@ public abstract class IgniteAbstractClient extends DB {
         (int) (Long.parseLong(key.substring(4)) % tableCount); //CoreWorkload uses key hash with prefix "user"
 
     return kvViews.get(index);
+  }
+
+  /**
+   * Get table name for key.
+   *
+   * @param key Key.
+   */
+  protected String getTableName(String key) {
+    int index = tableCount <= 1
+        ? 0 //skip the key processing in case of 1 test table
+        : (int) (Long.parseLong(key.substring(4)) % tableCount); //CoreWorkload uses key hash with prefix "user"
+
+    return tableNames.get(index);
   }
 }

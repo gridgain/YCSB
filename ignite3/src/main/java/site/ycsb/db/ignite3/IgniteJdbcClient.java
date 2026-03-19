@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,6 +72,10 @@ public class IgniteJdbcClient extends AbstractSqlClient {
   /** Prepared statement for deleting values. */
   private static final ThreadLocal<PreparedStatement> DELETE_PREPARED_STATEMENT = ThreadLocal
       .withInitial(IgniteJdbcClient::buildDeleteStatement);
+
+  /** Prepared statement for scanning values. */
+  private static final ThreadLocal<PreparedStatement> SCAN_PREPARED_STATEMENT = ThreadLocal
+      .withInitial(IgniteJdbcClient::buildScanStatement);
 
   /** Build prepared statement for reading values. */
   private static PreparedStatement buildReadStatement() {
@@ -130,6 +135,15 @@ public class IgniteJdbcClient extends AbstractSqlClient {
       return CONN.get().prepareStatement(deletePreparedStatementString);
     } catch (SQLException e) {
       throw new RuntimeException("Unable to prepare statement for SQL: " + deletePreparedStatementString, e);
+    }
+  }
+
+  /** Build prepared statement for scanning values. */
+  private static PreparedStatement buildScanStatement() {
+    try {
+      return CONN.get().prepareStatement(scanPreparedStatementString);
+    } catch (SQLException e) {
+      throw new RuntimeException("Unable to prepare statement for SQL: " + scanPreparedStatementString, e);
     }
   }
 
@@ -218,6 +232,19 @@ public class IgniteJdbcClient extends AbstractSqlClient {
 
   /** {@inheritDoc} */
   @Override
+  public Status scan(String table, String startkey, int recordcount, Set<String> fields,
+                     Vector<HashMap<String, ByteIterator>> result) {
+    try {
+      return jdbcScan(startkey, recordcount, fields, result);
+    } catch (Exception e) {
+      LOG.error(String.format("Error scanning from key: %s", startkey), e);
+
+      return Status.ERROR;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
     try {
       modify(key, values);
@@ -294,6 +321,9 @@ public class IgniteJdbcClient extends AbstractSqlClient {
         if (!DELETE_PREPARED_STATEMENT.get().isClosed()) {
           DELETE_PREPARED_STATEMENT.get().close();
         }
+        if (!SCAN_PREPARED_STATEMENT.get().isClosed()) {
+          SCAN_PREPARED_STATEMENT.get().close();
+        }
 
         conn0.close();
         CONN.remove();
@@ -303,6 +333,41 @@ public class IgniteJdbcClient extends AbstractSqlClient {
     }
 
     super.cleanup();
+  }
+
+  /**
+   * Perform range scan operation with Ignite JDBC client.
+   *
+   * @param startkey Start key (inclusive).
+   * @param recordcount Maximum number of records to return.
+   * @param fields Fields to read, or null/empty for all fields.
+   * @param result Result vector.
+   */
+  protected Status jdbcScan(String startkey, int recordcount, Set<String> fields,
+                            Vector<HashMap<String, ByteIterator>> result) throws SQLException {
+    Set<String> cols = (fields == null || fields.isEmpty()) ? new HashSet<>(valueFields) : fields;
+
+    PreparedStatement stmt = SCAN_PREPARED_STATEMENT.get();
+    stmt.setString(1, startkey);
+    stmt.setInt(2, recordcount);
+
+    try (ResultSet rs = stmt.executeQuery()) {
+      while (rs.next()) {
+        HashMap<String, ByteIterator> rowResult = new LinkedHashMap<>();
+
+        for (String column : cols) {
+          String val = rs.getString(column);
+
+          if (val != null) {
+            rowResult.put(column, new StringByteIterator(val));
+          }
+        }
+
+        result.add(rowResult);
+      }
+    }
+
+    return Status.OK;
   }
 
   /**

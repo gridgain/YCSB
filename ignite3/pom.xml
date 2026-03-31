@@ -124,6 +124,11 @@ LICENSE file.
       <name>GridGain external</name>
       <url>https://gridgainsystems.com/nexus/content/repositories/external</url>
     </repository>
+    <repository>
+      <!-- Used to resolve the custom scalecube-cluster fork (IGNITE-28291 / IGN-30607) compatible with Java 11 -->
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
   </repositories>
 
   <dependencies>
